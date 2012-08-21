@@ -8,7 +8,7 @@
 
   Backbone = this.Backbone || require('backbone');
 
-  ((typeof module !== "undefined" && module !== null) || {}).exports = this.BackboneOrm = BackboneOrm = (function(_super) {
+  (typeof module !== "undefined" && module !== null ? module : {}).exports = this.BackboneOrm = BackboneOrm = (function(_super) {
 
     __extends(BackboneOrm, _super);
 

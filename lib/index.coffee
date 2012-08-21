@@ -1,7 +1,7 @@
 _ = @_ or require 'underscore'
 Backbone = @Backbone or require 'backbone'
 
-(module? or {}).exports = @BackboneOrm =
+(if module? then module else {}).exports = @BackboneOrm =
 class BackboneOrm extends Backbone.Model
   @new: (attributes) ->
     model = @cache.get @prototype._generateId attributes
