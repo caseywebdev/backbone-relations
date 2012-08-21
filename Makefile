@@ -3,6 +3,7 @@ COFFEE=$(BIN)coffee
 MOCHA=$(BIN)mocha
 
 all:
+	npm install
 	$(COFFEE) -c -o ./dist ./lib
 
 test:
