@@ -8,6 +8,7 @@
     "url": "https://github.com/caseywebdev/backbone-orm.git"
   },
   "dependencies": {
+    "underscore": "x",
     "backbone": "x"
   },
   "devDependencies": {

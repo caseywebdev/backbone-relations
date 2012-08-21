@@ -3,7 +3,7 @@ COFFEE=$(BIN)coffee
 MOCHA=$(BIN)mocha
 
 all:
-	$(COFFEE) -cb -o ./ ./
+	$(COFFEE) -c -o ./dist ./lib
 
 test:
 	$(MOCHA)

@@ -1,16 +1,15 @@
-[![Build Status](https://secure.travis-ci.org/caseywebdev/xl8.png)](http://travis-ci.org/caseywebdev/xl8)
+[![Build Status](https://secure.travis-ci.org/caseywebdev/backbone-orm.png)](http://travis-ci.org/caseywebdev/backbone-orm)
 
-xl8
+backbone-orm
 ===
 
-Translate files written in the language of your choice to the language then
-need to end up in.
+Backbone Object Relational Mapping
 
 Install
 -------
 
 ```bash
-npm install xl8
+npm install backbone-orm
 ```
 
 Test

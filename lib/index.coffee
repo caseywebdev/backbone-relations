@@ -1,6 +1,7 @@
+_ = require 'underscore'
 Backbone = @Backbone or require 'backbone'
 
-(module or {}).exports = class @BackboneOrm extends Backbone.Model
+(module or {}).exports = @BackboneOrm = class BackboneOrm extends Backbone.Model
   @new: (attributes) ->
     model = @cache.get @prototype._generateId attributes
     model?.set(arguments...) or new @ arguments...
@@ -43,7 +44,7 @@ Backbone = @Backbone or require 'backbone'
       @_hookGroup.apply @, group
 
   _hookHasOne: (name, rel) ->
-    klass = if (k = rel.hasOne) instanceof Model then k else k()
+    klass = if (k = rel.hasOne) instanceof BackboneOrm then k else k()
     mine = rel.myFk
 
     onIdChange = =>
@@ -68,7 +69,7 @@ Backbone = @Backbone or require 'backbone'
     @on "change:#{mine}", setModel
 
   _hookHasMany: (name, rel) ->
-    klass = if (k = rel.hasMany) instanceof Model then k else k()
+    klass = if (k = rel.hasMany) instanceof BackboneOrm then k else k()
     theirs = rel.theirFk
     models = @rel[name] = new klass.Collection
 
@@ -79,8 +80,8 @@ Backbone = @Backbone or require 'backbone'
       @id is model.get theirs
 
   _hookHasManyVia: (name, rel) ->
-    klass = if (k = rel.hasMany) instanceof Model then k else k()
-    viaKlass = if (k = rel.via) instanceof Model then k else k()
+    klass = if (k = rel.hasMany) instanceof BackboneOrm then k else k()
+    viaKlass = if (k = rel.via) instanceof BackboneOrm then k else k()
     mine = rel.myViaFk
     theirs = rel.theirViaFk
     models = @rel[name] = new klass.Collection
@@ -113,7 +114,7 @@ Backbone = @Backbone or require 'backbone'
 
   _hookGroup: (name, group) ->
     klass =
-      if (k = @relations[group[0]].hasMany) instanceof Model then k else k()
+      if (k = @relations[group[0]].hasMany) instanceof BackboneOrm then k else k()
     group = @rel[name] = new klass.Collection
     for rel of group
       group.add @rel[rel].models
@@ -136,7 +137,7 @@ Backbone = @Backbone or require 'backbone'
     super arguments...
 
 class BackboneOrm.Collection extends Backbone.Collection
-  model: Model
+  model: BackboneOrm
 
   _onModelEvent: (event, model, collection, options) ->
     if model and event is 'change' and model.id isnt model._previousId
@@ -235,3 +236,53 @@ BackboneOrm.sync = (method, model, options) ->
       return options.error err if err
       model.set result.rows[0]
       options.success() if ++n is m
+
+sqlr =
+  columns: (data, table) ->
+    _.map(data, (col, i) ->
+      col = i unless table or _.isArray data
+      sqlr.column col, table
+    ).join ', '
+
+  column: (col, table) ->
+    "#{if table then "\"#{table}\"." else ''}\"#{col}\""
+
+  values: (data, values) ->
+    _.reduce data, (text, val) ->
+      values.push val
+      n = values.length
+      text += if text then ", $#{n}" else "$#{n}"
+    , ''
+
+  colsAreVals: (data, values, table, delimiter = ', ') ->
+    _.map(data, (val, col) ->
+      sqlr.binaryGet sqlr.column(col, table), val, values
+    ).join delimiter
+
+  colsToVals: (data, values, table) ->
+    _.map(data, (val, col) ->
+      sqlr.binarySet sqlr.column(col, table), val, values
+    ).join ', '
+
+  binaryGet: (left, right, values, operator = '=') ->
+    l = left
+    r = '?'
+    o = operator
+    unless right?
+      switch operator
+        when '=', '!='
+          r = 'NULL'
+          o = 'IS'
+          o += ' NOT' if operator is '!='
+        else
+          r = 0
+    if r isnt 'NULL'
+      values.push right
+      r = "$#{values.length}"
+    "#{l} #{o} #{r}"
+
+  binarySet: (left, right, values) ->
+    values.push right
+    right = "$#{values.length}"
+    "#{left} = #{right}"
+
