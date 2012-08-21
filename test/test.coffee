@@ -1,4 +1,4 @@
 should = require('chai').should()
-BackboneOrm = require '../lib'
+BackboneOrm = require '../lib/backbone-orm'
 
 # Needs tests
