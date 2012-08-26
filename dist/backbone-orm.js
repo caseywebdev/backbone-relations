@@ -39,8 +39,8 @@
       Model.prototype.initialize = function() {
         Model.__super__.initialize.apply(this, arguments);
         this._previousId = this.id = this._generateId();
-        this._hookRelations();
-        return this.constructor.cache.add(this);
+        this.constructor.cache.add(this);
+        return this._hookRelations();
       };
 
       Model.prototype._generateId = function(attributes) {
@@ -107,13 +107,12 @@
             return _this.set(mine, null);
           }
         };
-        (this.set[name] = function(next) {
-          var prev;
-          if (next == null) {
-            next = klass.cache.get(_this.get(mine));
-          }
-          if (!next) {
-            return;
+        (this.set[name] = function() {
+          var next, prev;
+          if (_this.get(mine)) {
+            next = klass["new"]({
+              id: _this.get(mine)
+            });
           }
           prev = _this.get[name];
           if (next === prev) {
@@ -124,15 +123,12 @@
             prev.off('destroy', onDestroyModel);
           }
           _this.get[name] = next;
-          _this.set(mine, next.id);
-          next.on('change:id', onIdChange);
-          return next.on('destroy', onDestroyModel);
-        })();
-        klass.cache.on('add', function(model) {
-          if (model.id === _this.get(mine)) {
-            return _this.set[name](model);
+          if (next) {
+            next.on('change:id', onIdChange);
+            return next.on('destroy', onDestroyModel);
           }
-        });
+        })();
+        klass.cache.on('add', this.set[name]);
         return this.on("change:" + mine, this.set[name]);
       };
 
@@ -161,21 +157,24 @@
         theirs = rel.theirViaFk;
         models = this.get[name] = new klass.Collection;
         via = models.via = new viaKlass.Collection;
-        klass.cache.on('add', function(model) {
-          if (_this.id === model.get(mine)) {
-            return models.add(model);
-          }
-        });
         viaKlass.cache.on('add', function(model) {
           if (_this.id === model.get(mine)) {
-            via.add(model);
-            return models.add(klass["new"]({
-              id: model.get(theirs)
-            }));
+            return via.add(model);
           }
         });
-        via.on('remove', function(model) {
+        via.on('add', function(model) {
+          return models.add(klass["new"]({
+            id: model.get(theirs)
+          }));
+        }).on('remove', function(model) {
           return models.remove(models.get(model.get(theirs)));
+        });
+        klass.cache.on('add', function(model) {
+          if (via.find(function(model2) {
+            return model2.get(theirs === model.id);
+          })) {
+            return models.add(model);
+          }
         });
         models.on('add', function(model) {
           var attributes;

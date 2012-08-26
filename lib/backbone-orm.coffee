@@ -12,8 +12,8 @@ _ = @_ or require 'underscore'
     initialize: ->
       super arguments...
       @_previousId = @id = @_generateId()
-      @_hookRelations()
       @constructor.cache.add @
+      @_hookRelations()
 
     _generateId: (attributes = @attributes or {}) ->
       return attributes[@idAttribute] unless @compositeKey
@@ -62,23 +62,20 @@ _ = @_ or require 'underscore'
         else
           @set mine, null
 
-      (@set[name] = (next = klass.cache.get @get mine) =>
-        return unless next
+      (@set[name] = =>
+        next = klass.new id: @get mine if @get mine
         prev = @get[name]
         return if next is prev
         if prev
           prev.off 'change:id', onIdChange
           prev.off 'destroy', onDestroyModel
         @get[name] = next
-        @set mine, next.id
-        next.on 'change:id', onIdChange
-        next.on 'destroy', onDestroyModel
+        if next
+          next.on 'change:id', onIdChange
+          next.on 'destroy', onDestroyModel
       )()
 
-      klass.cache.on 'add', (model) =>
-        if model.id is @get mine
-          @set[name] model
-
+      klass.cache.on 'add', @set[name]
       @on "change:#{mine}", @set[name]
 
     _hookHasMany: (name, rel) ->
@@ -99,16 +96,20 @@ _ = @_ or require 'underscore'
       theirs = rel.theirViaFk
       models = @get[name] = new klass.Collection
       via = models.via = new viaKlass.Collection
-      klass.cache.on 'add', (model) =>
-        models.add model if @id is model.get mine
 
       viaKlass.cache.on 'add', (model) =>
-        if @id is model.get mine
-          via.add model
-          models.add klass.new {id: model.get theirs}
+        via.add model if @id is model.get mine
 
-      via.on 'remove', (model) ->
-        models.remove models.get model.get theirs
+      via
+        .on('add', (model) ->
+          models.add klass.new id: model.get theirs
+        )
+        .on 'remove', (model) ->
+          models.remove models.get model.get theirs
+
+      klass.cache.on 'add', (model) ->
+        if (via.find (model2) -> model2.get theirs is model.id)
+          models.add model
 
       models
         .on('add', (model) =>
