@@ -2,7 +2,9 @@ _ = @_ or require 'underscore'
 
 (module? and module or {}).exports = @BackboneOrm =
 (Backbone = @Backbone or require 'backbone') ->
-  class BackboneOrm extends Backbone.Model
+  getModel = (val) -> if val instanceof Model then val else val()
+
+  class Model extends Backbone.Model
     @new: (attributes) ->
       model = @cache.get @prototype._generateId attributes
       model?.set(arguments...) or new @ arguments...
@@ -26,14 +28,17 @@ _ = @_ or require 'underscore'
       # Check for the relations definition
       return unless @relations
 
-      # Define the relations object
-      @rel = {}
-      groups = []
+      # Create instance copies for modifying
+      @get = _.bind @get, @
+      @set = _.bind @set, @
+
+      # Collect groups and hook them after the relations
+      groups = {}
 
       # Start building
       for name, rel of @relations
-        if rel.group
-          groups.push [name, rel]
+        if _.isArray rel
+          groups[name] = rel
         else if rel.hasOne
           @_hookHasOne name, rel
         else if rel.via
@@ -41,38 +46,45 @@ _ = @_ or require 'underscore'
         else
           @_hookHasMany name, rel
 
-      for group in groups
-        @_hookGroup.apply @, group
+      for name, rels of groups
+        @_hookGroup name, rels
 
     _hookHasOne: (name, rel) ->
-      klass = if (k = rel.hasOne) instanceof BackboneOrm then k else k()
+      klass = if (k = rel.hasOne) instanceof Model then k else k()
       mine = rel.myFk
 
       onIdChange = =>
-        @set mine, @rel[name].id
+        @set mine, @get[name].id
 
       onDestroyModel = =>
-        @trigger 'destroy', @
+        if rel.romeo
+          @trigger 'destroy', @, @collection
+        else
+          @set mine, null
 
-      (setModel = (next = klass.new id: @get mine) =>
-        return if next.id isnt @get mine
-        prev = @rel[name]
+      (@set[name] = (next = klass.cache.get @get mine) =>
+        return unless next
+        prev = @get[name]
         return if next is prev
         if prev
           prev.off 'change:id', onIdChange
-          prev.off 'destroy', onDestroyModel if rel.romeo
-        @rel[name] = next
+          prev.off 'destroy', onDestroyModel
+        @get[name] = next
+        @set mine, next.id
         next.on 'change:id', onIdChange
-        next.on 'destroy', onDestroyModel if rel.romeo
+        next.on 'destroy', onDestroyModel
       )()
 
-      klass.cache.on 'add', setModel
-      @on "change:#{mine}", setModel
+      klass.cache.on 'add', (model) =>
+        if model.id is @get mine
+          @set[name] model
+
+      @on "change:#{mine}", @set[name]
 
     _hookHasMany: (name, rel) ->
-      klass = if (k = rel.hasMany) instanceof BackboneOrm then k else k()
+      klass = getModel rel.hasMany
       theirs = rel.theirFk
-      models = @rel[name] = new klass.Collection
+      models = @get[name] = new klass.Collection
 
       klass.cache.on 'add', (model) =>
         models.add model if @id is model.get theirs
@@ -81,13 +93,12 @@ _ = @_ or require 'underscore'
         @id is model.get theirs
 
     _hookHasManyVia: (name, rel) ->
-      klass = if (k = rel.hasMany) instanceof BackboneOrm then k else k()
-      viaKlass = if (k = rel.via) instanceof BackboneOrm then k else k()
+      klass = getModel rel.hasMany
+      viaKlass = getModel rel.via
       mine = rel.myViaFk
       theirs = rel.theirViaFk
-      models = @rel[name] = new klass.Collection
+      models = @get[name] = new klass.Collection
       via = models.via = new viaKlass.Collection
-
       klass.cache.on 'add', (model) =>
         models.add model if @id is model.get mine
 
@@ -113,23 +124,22 @@ _ = @_ or require 'underscore'
       via.add viaKlass.cache.filter (model) =>
         @id is model.get mine
 
-    _hookGroup: (name, group) ->
-      klass =
-        if (k = @relations[group[0]].hasMany) instanceof BackboneOrm then k else k()
-      group = @rel[name] = new klass.Collection
-      for rel of group
-        group.add @rel[rel].models
+    _hookGroup: (name, rels) ->
+      klass = getModel @relations[rels[0]].hasMany
+      group = @get[name] = new klass.Collection
+      for rel in rels
+        group.add (rel = @get[rel]).models
         rel
           .on('add', (model) -> group.add model)
           .on 'remove', (model) -> group.remove model
 
     via: (rel, id) ->
-      id = id.id if id.id?
+      id = id.id if id?.id
       if group = @relations[rel].group
         for rel in group when via = @via rel, id
           return via
         return undefined
-      @rel[rel].via.find (model) =>
+      @get[rel].via.find (model) =>
         id is model.get @relations[rel].theirViaFk
 
     change: ->
@@ -137,8 +147,8 @@ _ = @_ or require 'underscore'
       @id = @_generateId()
       super arguments...
 
-  class BackboneOrm.Collection extends Backbone.Collection
-    model: BackboneOrm
+  class Model.Collection extends Backbone.Collection
+    model: Model
 
     _onModelEvent: (event, model, collection, options) ->
       if model and event is 'change' and model.id isnt model._previousId
@@ -146,18 +156,39 @@ _ = @_ or require 'underscore'
         @_byId[model.id] = model if model.id?
       super arguments...
 
-    save: ->
-      args = arguments
-      @each (model) -> model.save args...
+    fetch: (options) ->
+      options = if options then _.clone options else {}
+      success = options.success
+      options.success = (resp, status, xhr) =>
+        models = []
+        models.push = @model.new attrs for attrs in @parse resp
+        @[if options.add then 'add' else 'reset'] models
+        success @, resp, options if success
+        @trigger 'sync', @, resp, options
+      options.error = Backbone.wrapError options.error, @, options
+      return @sync('read', this, options);
 
-    fetch: ->
-      args = arguments
-      @each (model) -> model.fetch args...
+    save: (options) ->
+      options = if options then _.clone options else {}
+      success = options.success
+      options.success = (resp, status, xhr) =>
+        @at(i).set attrs, xhr for attrs, i in @parse resp
+        success @, resp, options if success
+        @trigger 'sync', @, resp, options
+      options.error = Backbone.wrapError options.error, @, options
+      return @sync('create', this, options);
 
-    destroy: ->
-      args = arguments
-      @each (model) -> model.destroy args...
+    destroy: (options) ->
+      options = if options then _.clone options else {}
+      success = options.success
+      options.success = (resp) ->
+        for model in @models
+          model.trigger 'destroy', model, model.collection, options
+          success model, resp, options if success
+        @trigger 'sync', @, resp, options
+      options.error = Backbone.wrapError options.error, @, options
+      return @sync 'delete', @, options
 
-  BackboneOrm
+  Model
 
 @BackboneOrm = @BackboneOrm() if Backbone?

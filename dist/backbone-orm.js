@@ -7,19 +7,26 @@
   _ = this._ || require('underscore');
 
   ((typeof module !== "undefined" && module !== null) && module || {}).exports = this.BackboneOrm = function(Backbone) {
-    var BackboneOrm;
+    var Model, getModel;
     if (Backbone == null) {
       Backbone = this.Backbone || require('backbone');
     }
-    BackboneOrm = (function(_super) {
+    getModel = function(val) {
+      if (val instanceof Model) {
+        return val;
+      } else {
+        return val();
+      }
+    };
+    Model = (function(_super) {
 
-      __extends(BackboneOrm, _super);
+      __extends(Model, _super);
 
-      function BackboneOrm() {
-        return BackboneOrm.__super__.constructor.apply(this, arguments);
+      function Model() {
+        return Model.__super__.constructor.apply(this, arguments);
       }
 
-      BackboneOrm["new"] = function(attributes) {
+      Model["new"] = function(attributes) {
         var model;
         model = this.cache.get(this.prototype._generateId(attributes));
         return (model != null ? model.set.apply(model, arguments) : void 0) || (function(func, args, ctor) {
@@ -29,14 +36,14 @@
         })(this, arguments, function(){});
       };
 
-      BackboneOrm.prototype.initialize = function() {
-        BackboneOrm.__super__.initialize.apply(this, arguments);
+      Model.prototype.initialize = function() {
+        Model.__super__.initialize.apply(this, arguments);
         this._previousId = this.id = this._generateId();
         this._hookRelations();
         return this.constructor.cache.add(this);
       };
 
-      BackboneOrm.prototype._generateId = function(attributes) {
+      Model.prototype._generateId = function(attributes) {
         var index, val, vals, _i, _len, _ref;
         if (attributes == null) {
           attributes = this.attributes || {};
@@ -56,18 +63,19 @@
         return vals.join('-');
       };
 
-      BackboneOrm.prototype._hookRelations = function() {
-        var group, groups, name, rel, _i, _len, _ref, _results;
+      Model.prototype._hookRelations = function() {
+        var groups, name, rel, rels, _ref, _results;
         if (!this.relations) {
           return;
         }
-        this.rel = {};
-        groups = [];
+        this.get = _.bind(this.get, this);
+        this.set = _.bind(this.set, this);
+        groups = {};
         _ref = this.relations;
         for (name in _ref) {
           rel = _ref[name];
-          if (rel.group) {
-            groups.push([name, rel]);
+          if (_.isArray(rel)) {
+            groups[name] = rel;
           } else if (rel.hasOne) {
             this._hookHasOne(name, rel);
           } else if (rel.via) {
@@ -77,60 +85,63 @@
           }
         }
         _results = [];
-        for (_i = 0, _len = groups.length; _i < _len; _i++) {
-          group = groups[_i];
-          _results.push(this._hookGroup.apply(this, group));
+        for (name in groups) {
+          rels = groups[name];
+          _results.push(this._hookGroup(name, rels));
         }
         return _results;
       };
 
-      BackboneOrm.prototype._hookHasOne = function(name, rel) {
-        var k, klass, mine, onDestroyModel, onIdChange, setModel,
+      Model.prototype._hookHasOne = function(name, rel) {
+        var k, klass, mine, onDestroyModel, onIdChange,
           _this = this;
-        klass = (k = rel.hasOne) instanceof BackboneOrm ? k : k();
+        klass = (k = rel.hasOne) instanceof Model ? k : k();
         mine = rel.myFk;
         onIdChange = function() {
-          return _this.set(mine, _this.rel[name].id);
+          return _this.set(mine, _this.get[name].id);
         };
         onDestroyModel = function() {
-          return _this.trigger('destroy', _this);
+          if (rel.romeo) {
+            return _this.trigger('destroy', _this, _this.collection);
+          } else {
+            return _this.set(mine, null);
+          }
         };
-        (setModel = function(next) {
+        (this.set[name] = function(next) {
           var prev;
           if (next == null) {
-            next = klass["new"]({
-              id: _this.get(mine)
-            });
+            next = klass.cache.get(_this.get(mine));
           }
-          if (next.id !== _this.get(mine)) {
+          if (!next) {
             return;
           }
-          prev = _this.rel[name];
+          prev = _this.get[name];
           if (next === prev) {
             return;
           }
           if (prev) {
             prev.off('change:id', onIdChange);
-            if (rel.romeo) {
-              prev.off('destroy', onDestroyModel);
-            }
+            prev.off('destroy', onDestroyModel);
           }
-          _this.rel[name] = next;
+          _this.get[name] = next;
+          _this.set(mine, next.id);
           next.on('change:id', onIdChange);
-          if (rel.romeo) {
-            return next.on('destroy', onDestroyModel);
-          }
+          return next.on('destroy', onDestroyModel);
         })();
-        klass.cache.on('add', setModel);
-        return this.on("change:" + mine, setModel);
+        klass.cache.on('add', function(model) {
+          if (model.id === _this.get(mine)) {
+            return _this.set[name](model);
+          }
+        });
+        return this.on("change:" + mine, this.set[name]);
       };
 
-      BackboneOrm.prototype._hookHasMany = function(name, rel) {
-        var k, klass, models, theirs,
+      Model.prototype._hookHasMany = function(name, rel) {
+        var klass, models, theirs,
           _this = this;
-        klass = (k = rel.hasMany) instanceof BackboneOrm ? k : k();
+        klass = getModel(rel.hasMany);
         theirs = rel.theirFk;
-        models = this.rel[name] = new klass.Collection;
+        models = this.get[name] = new klass.Collection;
         klass.cache.on('add', function(model) {
           if (_this.id === model.get(theirs)) {
             return models.add(model);
@@ -141,14 +152,14 @@
         }));
       };
 
-      BackboneOrm.prototype._hookHasManyVia = function(name, rel) {
-        var k, klass, mine, models, theirs, via, viaKlass,
+      Model.prototype._hookHasManyVia = function(name, rel) {
+        var klass, mine, models, theirs, via, viaKlass,
           _this = this;
-        klass = (k = rel.hasMany) instanceof BackboneOrm ? k : k();
-        viaKlass = (k = rel.via) instanceof BackboneOrm ? k : k();
+        klass = getModel(rel.hasMany);
+        viaKlass = getModel(rel.via);
         mine = rel.myViaFk;
         theirs = rel.theirViaFk;
-        models = this.rel[name] = new klass.Collection;
+        models = this.get[name] = new klass.Collection;
         via = models.via = new viaKlass.Collection;
         klass.cache.on('add', function(model) {
           if (_this.id === model.get(mine)) {
@@ -182,13 +193,14 @@
         }));
       };
 
-      BackboneOrm.prototype._hookGroup = function(name, group) {
-        var k, klass, rel, _results;
-        klass = (k = this.relations[group[0]].hasMany) instanceof BackboneOrm ? k : k();
-        group = this.rel[name] = new klass.Collection;
+      Model.prototype._hookGroup = function(name, rels) {
+        var group, klass, rel, _i, _len, _results;
+        klass = getModel(this.relations[rels[0]].hasMany);
+        group = this.get[name] = new klass.Collection;
         _results = [];
-        for (rel in group) {
-          group.add(this.rel[rel].models);
+        for (_i = 0, _len = rels.length; _i < _len; _i++) {
+          rel = rels[_i];
+          group.add((rel = this.get[rel]).models);
           _results.push(rel.on('add', function(model) {
             return group.add(model);
           }).on('remove', function(model) {
@@ -198,10 +210,10 @@
         return _results;
       };
 
-      BackboneOrm.prototype.via = function(rel, id) {
+      Model.prototype.via = function(rel, id) {
         var group, via, _i, _len,
           _this = this;
-        if (id.id != null) {
+        if (id != null ? id.id : void 0) {
           id = id.id;
         }
         if (group = this.relations[rel].group) {
@@ -213,21 +225,21 @@
           }
           return void 0;
         }
-        return this.rel[rel].via.find(function(model) {
+        return this.get[rel].via.find(function(model) {
           return id === model.get(_this.relations[rel].theirViaFk);
         });
       };
 
-      BackboneOrm.prototype.change = function() {
+      Model.prototype.change = function() {
         this._previousId = this.id;
         this.id = this._generateId();
-        return BackboneOrm.__super__.change.apply(this, arguments);
+        return Model.__super__.change.apply(this, arguments);
       };
 
-      return BackboneOrm;
+      return Model;
 
     })(Backbone.Model);
-    BackboneOrm.Collection = (function(_super) {
+    Model.Collection = (function(_super) {
 
       __extends(Collection, _super);
 
@@ -235,7 +247,7 @@
         return Collection.__super__.constructor.apply(this, arguments);
       }
 
-      Collection.prototype.model = BackboneOrm;
+      Collection.prototype.model = Model;
 
       Collection.prototype._onModelEvent = function(event, model, collection, options) {
         if (model && event === 'change' && model.id !== model._previousId) {
@@ -247,34 +259,74 @@
         return Collection.__super__._onModelEvent.apply(this, arguments);
       };
 
-      Collection.prototype.save = function() {
-        var args;
-        args = arguments;
-        return this.each(function(model) {
-          return model.save.apply(model, args);
-        });
+      Collection.prototype.fetch = function(options) {
+        var success,
+          _this = this;
+        options = options ? _.clone(options) : {};
+        success = options.success;
+        options.success = function(resp, status, xhr) {
+          var attrs, models, _i, _len, _ref;
+          models = [];
+          _ref = _this.parse(resp);
+          for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+            attrs = _ref[_i];
+            models.push = _this.model["new"](attrs);
+          }
+          _this[options.add ? 'add' : 'reset'](models);
+          if (success) {
+            success(_this, resp, options);
+          }
+          return _this.trigger('sync', _this, resp, options);
+        };
+        options.error = Backbone.wrapError(options.error, this, options);
+        return this.sync('read', this, options);
       };
 
-      Collection.prototype.fetch = function() {
-        var args;
-        args = arguments;
-        return this.each(function(model) {
-          return model.fetch.apply(model, args);
-        });
+      Collection.prototype.save = function(options) {
+        var success,
+          _this = this;
+        options = options ? _.clone(options) : {};
+        success = options.success;
+        options.success = function(resp, status, xhr) {
+          var attrs, i, _i, _len, _ref;
+          _ref = _this.parse(resp);
+          for (i = _i = 0, _len = _ref.length; _i < _len; i = ++_i) {
+            attrs = _ref[i];
+            _this.at(i).set(attrs, xhr);
+          }
+          if (success) {
+            success(_this, resp, options);
+          }
+          return _this.trigger('sync', _this, resp, options);
+        };
+        options.error = Backbone.wrapError(options.error, this, options);
+        return this.sync('create', this, options);
       };
 
-      Collection.prototype.destroy = function() {
-        var args;
-        args = arguments;
-        return this.each(function(model) {
-          return model.destroy.apply(model, args);
-        });
+      Collection.prototype.destroy = function(options) {
+        var success;
+        options = options ? _.clone(options) : {};
+        success = options.success;
+        options.success = function(resp) {
+          var model, _i, _len, _ref;
+          _ref = this.models;
+          for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+            model = _ref[_i];
+            model.trigger('destroy', model, model.collection, options);
+            if (success) {
+              success(model, resp, options);
+            }
+          }
+          return this.trigger('sync', this, resp, options);
+        };
+        options.error = Backbone.wrapError(options.error, this, options);
+        return this.sync('delete', this, options);
       };
 
       return Collection;
 
     })(Backbone.Collection);
-    return BackboneOrm;
+    return Model;
   };
 
   if (typeof Backbone !== "undefined" && Backbone !== null) {
