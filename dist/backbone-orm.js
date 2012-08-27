@@ -64,30 +64,23 @@
       };
 
       Model.prototype._hookRelations = function() {
-        var groups, name, rel, rels, _ref, _results;
+        var name, rel, _ref, _results;
         if (!this.relations) {
           return;
         }
         this.get = _.bind(this.get, this);
         this.set = _.bind(this.set, this);
-        groups = {};
         _ref = this.relations;
+        _results = [];
         for (name in _ref) {
           rel = _ref[name];
-          if (_.isArray(rel)) {
-            groups[name] = rel;
-          } else if (rel.hasOne) {
-            this._hookHasOne(name, rel);
+          if (rel.hasOne) {
+            _results.push(this._hookHasOne(name, rel));
           } else if (rel.via) {
-            this._hookHasManyVia(name, rel);
+            _results.push(this._hookHasManyVia(name, rel));
           } else {
-            this._hookHasMany(name, rel);
+            _results.push(this._hookHasMany(name, rel));
           }
-        }
-        _results = [];
-        for (name in groups) {
-          rels = groups[name];
-          _results.push(this._hookGroup(name, rels));
         }
         return _results;
       };
@@ -107,13 +100,8 @@
             return _this.set(mine, null);
           }
         };
-        (this.set[name] = function() {
-          var next, prev;
-          if (_this.get(mine)) {
-            next = klass["new"]({
-              id: _this.get(mine)
-            });
-          }
+        this.set[name] = function(next) {
+          var prev;
           prev = _this.get[name];
           if (next === prev) {
             return;
@@ -123,13 +111,27 @@
             prev.off('destroy', onDestroyModel);
           }
           _this.get[name] = next;
+          _this.set(mine, next != null ? next.id : void 0);
           if (next) {
             next.on('change:id', onIdChange);
             return next.on('destroy', onDestroyModel);
           }
-        })();
-        klass.cache.on('add', this.set[name]);
-        return this.on("change:" + mine, this.set[name]);
+        };
+        if (this.get(mine)) {
+          this.set[name](klass["new"]({
+            id: this.get(mine)
+          }));
+        }
+        klass.cache.on('add', function(model) {
+          if (model.id === _this.get(mine)) {
+            return _this.set[name](model);
+          }
+        });
+        return this.on("change:" + mine, function() {
+          return _this.set[name](_this.get(mine) ? klass["new"]({
+            id: _this.get(mine)
+          }) : void 0);
+        });
       };
 
       Model.prototype._hookHasMany = function(name, rel) {
@@ -138,10 +140,16 @@
         klass = getModel(rel.hasMany);
         theirs = rel.theirFk;
         models = this.get[name] = new klass.Collection;
-        klass.cache.on('add', function(model) {
+        models.url = function() {
+          return "" + ((typeof _this.url === "function" ? _this.url() : void 0) || _this.url) + (rel.urlRoot || ("/" + name));
+        };
+        klass.cache.on("add change:" + theirs, function(model) {
           if (_this.id === model.get(theirs)) {
             return models.add(model);
           }
+        });
+        models.on("change:" + theirs, function(model) {
+          return models.remove(model);
         });
         return models.add(klass.cache.filter(function(model) {
           return _this.id === model.get(theirs);
@@ -156,7 +164,13 @@
         mine = rel.myViaFk;
         theirs = rel.theirViaFk;
         models = this.get[name] = new klass.Collection;
+        models.url = function() {
+          return "" + ((typeof _this.url === "function" ? _this.url() : void 0) || _this.url) + (rel.urlRoot || ("/" + name));
+        };
         via = models.via = new viaKlass.Collection;
+        via.url = function() {
+          return "" + ((typeof _this.url === "function" ? _this.url() : void 0) || _this.url) + viaKlass.prototype.urlRoot;
+        };
         viaKlass.cache.on('add', function(model) {
           if (_this.id === model.get(mine)) {
             return via.add(model);
@@ -190,23 +204,6 @@
         return via.add(viaKlass.cache.filter(function(model) {
           return _this.id === model.get(mine);
         }));
-      };
-
-      Model.prototype._hookGroup = function(name, rels) {
-        var group, klass, rel, _i, _len, _results;
-        klass = getModel(this.relations[rels[0]].hasMany);
-        group = this.get[name] = new klass.Collection;
-        _results = [];
-        for (_i = 0, _len = rels.length; _i < _len; _i++) {
-          rel = rels[_i];
-          group.add((rel = this.get[rel]).models);
-          _results.push(rel.on('add', function(model) {
-            return group.add(model);
-          }).on('remove', function(model) {
-            return group.remove(model);
-          }));
-        }
-        return _results;
       };
 
       Model.prototype.via = function(rel, id) {

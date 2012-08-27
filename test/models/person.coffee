@@ -1,31 +1,29 @@
 BackboneOrm = require('../../lib/backbone-orm')()
 
 module.exports = class Person extends BackboneOrm
+  urlRoot: '/people'
   relations:
-    iFriended:
+    parents:
+      hasMany: -> Person
+      via: -> require './childParent'
+      myViaFk: 'childId'
+      theirViaFk: 'parentId'
+    children:
+      hasMany: -> Person
+      via: -> require './childParent'
+      myViaFk: 'parentId'
+      theirViaFk: 'childId'
+    friends:
       hasMany: -> Person
       via: -> require './friendship'
-      myViaFk: 'friender'
-      theirViaFk: 'friendee'
-    friendedMe:
-      hasMany: -> Person
-      via: -> require './friendship'
-      myViaFk: 'friendee'
-      theirViaFk: 'friender'
-    friends: ['friendedMe', 'iFriended']
-    mom:
+      myViaFk: 'frienderId'
+      theirViaFk: 'friendeeId'
+    idol:
       hasOne: -> Person
-      myFk: 'momId'
-    dad:
-      hasOne: -> Person
-      myFk: 'dadId'
-    momOf:
+      myFk: 'idolId'
+    fans:
       hasMany: -> Person
-      theirFk: 'momId'
-    dadOf:
-      hasMany: -> Person
-      theirFk: 'dadId'
-    children: ['momOf', 'dadOf']
+      theirFk: 'idolId'
 
 class Person.Collection extends BackboneOrm.Collection
   model: Person

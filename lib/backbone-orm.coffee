@@ -32,22 +32,14 @@ _ = @_ or require 'underscore'
       @get = _.bind @get, @
       @set = _.bind @set, @
 
-      # Collect groups and hook them after the relations
-      groups = {}
-
       # Start building
       for name, rel of @relations
-        if _.isArray rel
-          groups[name] = rel
-        else if rel.hasOne
+        if rel.hasOne
           @_hookHasOne name, rel
         else if rel.via
           @_hookHasManyVia name, rel
         else
           @_hookHasMany name, rel
-
-      for name, rels of groups
-        @_hookGroup name, rels
 
     _hookHasOne: (name, rel) ->
       klass = if (k = rel.hasOne) instanceof Model then k else k()
@@ -62,29 +54,38 @@ _ = @_ or require 'underscore'
         else
           @set mine, null
 
-      (@set[name] = =>
-        next = klass.new id: @get mine if @get mine
+      @set[name] = (next) =>
         prev = @get[name]
         return if next is prev
         if prev
           prev.off 'change:id', onIdChange
           prev.off 'destroy', onDestroyModel
         @get[name] = next
+        @set mine, next?.id
         if next
           next.on 'change:id', onIdChange
           next.on 'destroy', onDestroyModel
-      )()
 
-      klass.cache.on 'add', @set[name]
-      @on "change:#{mine}", @set[name]
+      @set[name] klass.new id: @get mine if @get mine
+
+      klass.cache.on 'add', (model) =>
+        @set[name] model if model.id is @get mine
+
+      @on "change:#{mine}", =>
+        @set[name] if @get mine then klass.new id: @get mine else undefined
 
     _hookHasMany: (name, rel) ->
       klass = getModel rel.hasMany
       theirs = rel.theirFk
       models = @get[name] = new klass.Collection
+      models.url = =>
+        "#{@url?() or @url}#{rel.urlRoot or "/#{name}"}"
 
-      klass.cache.on 'add', (model) =>
+      klass.cache.on "add change:#{theirs}", (model) =>
         models.add model if @id is model.get theirs
+
+      models.on "change:#{theirs}", (model) ->
+        models.remove model
 
       models.add klass.cache.filter (model) =>
         @id is model.get theirs
@@ -95,7 +96,11 @@ _ = @_ or require 'underscore'
       mine = rel.myViaFk
       theirs = rel.theirViaFk
       models = @get[name] = new klass.Collection
+      models.url = =>
+        "#{@url?() or @url}#{rel.urlRoot or "/#{name}"}"
       via = models.via = new viaKlass.Collection
+      via.url = =>
+        "#{@url?() or @url}#{viaKlass.prototype.urlRoot}"
 
       viaKlass.cache.on 'add', (model) =>
         via.add model if @id is model.get mine
@@ -124,15 +129,6 @@ _ = @_ or require 'underscore'
 
       via.add viaKlass.cache.filter (model) =>
         @id is model.get mine
-
-    _hookGroup: (name, rels) ->
-      klass = getModel @relations[rels[0]].hasMany
-      group = @get[name] = new klass.Collection
-      for rel in rels
-        group.add (rel = @get[rel]).models
-        rel
-          .on('add', (model) -> group.add model)
-          .on 'remove', (model) -> group.remove model
 
     via: (rel, id) ->
       id = id.id if id?.id
@@ -167,7 +163,7 @@ _ = @_ or require 'underscore'
         success @, resp, options if success
         @trigger 'sync', @, resp, options
       options.error = Backbone.wrapError options.error, @, options
-      return @sync('read', this, options);
+      return @sync 'read', this, options
 
     save: (options) ->
       options = if options then _.clone options else {}
@@ -177,7 +173,7 @@ _ = @_ or require 'underscore'
         success @, resp, options if success
         @trigger 'sync', @, resp, options
       options.error = Backbone.wrapError options.error, @, options
-      return @sync('create', this, options);
+      return @sync 'create', this, options
 
     destroy: (options) ->
       options = if options then _.clone options else {}
