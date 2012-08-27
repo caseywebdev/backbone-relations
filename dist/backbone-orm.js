@@ -86,13 +86,10 @@
       };
 
       Model.prototype._hookHasOne = function(name, rel) {
-        var k, klass, mine, onDestroyModel, onIdChange,
+        var k, klass, mine, onDestroyModel,
           _this = this;
         klass = (k = rel.hasOne) instanceof Model ? k : k();
         mine = rel.myFk;
-        onIdChange = function() {
-          return _this.set(mine, _this.get[name].id);
-        };
         onDestroyModel = function() {
           if (rel.romeo) {
             return _this.trigger('destroy', _this, _this.collection);
@@ -107,13 +104,11 @@
             return;
           }
           if (prev) {
-            prev.off('change:id', onIdChange);
             prev.off('destroy', onDestroyModel);
           }
           _this.get[name] = next;
           _this.set(mine, next != null ? next.id : void 0);
           if (next) {
-            next.on('change:id', onIdChange);
             return next.on('destroy', onDestroyModel);
           }
         };
@@ -143,6 +138,7 @@
         models.url = function() {
           return "" + ((typeof _this.url === "function" ? _this.url() : void 0) || _this.url) + (rel.urlRoot || ("/" + name));
         };
+        (models.filters = {})[theirs] = this;
         klass.cache.on("add change:" + theirs, function(model) {
           if (_this.id === model.get(theirs)) {
             return models.add(model);
@@ -171,6 +167,7 @@
         via.url = function() {
           return "" + ((typeof _this.url === "function" ? _this.url() : void 0) || _this.url) + viaKlass.prototype.urlRoot;
         };
+        (via.filters = {})[mine] = this;
         viaKlass.cache.on('add', function(model) {
           if (_this.id === model.get(mine)) {
             return via.add(model);
@@ -268,14 +265,17 @@
             attrs = _ref[_i];
             models.push = _this.model["new"](attrs);
           }
-          _this[options.add ? 'add' : 'reset'](models);
-          if (success) {
+          if (!options.add) {
+            _this.remove(_this.models);
+          }
+          _this.add(resp);
+          if (typeof success === "function") {
             success(_this, resp, options);
           }
           return _this.trigger('sync', _this, resp, options);
         };
         options.error = Backbone.wrapError(options.error, this, options);
-        return this.sync('read', this, options);
+        return (this.sync || Backbone.sync)('read', this, options);
       };
 
       Collection.prototype.save = function(options) {
@@ -283,6 +283,9 @@
           _this = this;
         options = options ? _.clone(options) : {};
         success = options.success;
+        if (!this.length) {
+          return typeof success === "function" ? success(this, [], options) : void 0;
+        }
         options.success = function(resp, status, xhr) {
           var attrs, i, _i, _len, _ref;
           _ref = _this.parse(resp);
@@ -290,13 +293,13 @@
             attrs = _ref[i];
             _this.at(i).set(attrs, xhr);
           }
-          if (success) {
+          if (typeof success === "function") {
             success(_this, resp, options);
           }
           return _this.trigger('sync', _this, resp, options);
         };
         options.error = Backbone.wrapError(options.error, this, options);
-        return this.sync('create', this, options);
+        return (this.sync || Backbone.sync)('create', this, options);
       };
 
       Collection.prototype.destroy = function(options) {
@@ -309,14 +312,14 @@
           for (_i = 0, _len = _ref.length; _i < _len; _i++) {
             model = _ref[_i];
             model.trigger('destroy', model, model.collection, options);
-            if (success) {
-              success(model, resp, options);
-            }
+          }
+          if (typeof success === "function") {
+            success(this, resp, options);
           }
           return this.trigger('sync', this, resp, options);
         };
         options.error = Backbone.wrapError(options.error, this, options);
-        return this.sync('delete', this, options);
+        return (this.sync || Backbone.sync)('delete', this, options);
       };
 
       return Collection;

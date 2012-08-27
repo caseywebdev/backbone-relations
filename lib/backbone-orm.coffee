@@ -45,9 +45,6 @@ _ = @_ or require 'underscore'
       klass = if (k = rel.hasOne) instanceof Model then k else k()
       mine = rel.myFk
 
-      onIdChange = =>
-        @set mine, @get[name].id
-
       onDestroyModel = =>
         if rel.romeo
           @trigger 'destroy', @, @collection
@@ -57,14 +54,10 @@ _ = @_ or require 'underscore'
       @set[name] = (next) =>
         prev = @get[name]
         return if next is prev
-        if prev
-          prev.off 'change:id', onIdChange
-          prev.off 'destroy', onDestroyModel
+        prev.off 'destroy', onDestroyModel if prev
         @get[name] = next
         @set mine, next?.id
-        if next
-          next.on 'change:id', onIdChange
-          next.on 'destroy', onDestroyModel
+        next.on 'destroy', onDestroyModel if next
 
       @set[name] klass.new id: @get mine if @get mine
 
@@ -80,6 +73,7 @@ _ = @_ or require 'underscore'
       models = @get[name] = new klass.Collection
       models.url = =>
         "#{@url?() or @url}#{rel.urlRoot or "/#{name}"}"
+      (models.filters = {})[theirs] = @
 
       klass.cache.on "add change:#{theirs}", (model) =>
         models.add model if @id is model.get theirs
@@ -101,6 +95,7 @@ _ = @_ or require 'underscore'
       via = models.via = new viaKlass.Collection
       via.url = =>
         "#{@url?() or @url}#{viaKlass.prototype.urlRoot}"
+      (via.filters = {})[mine] = @
 
       viaKlass.cache.on 'add', (model) =>
         via.add model if @id is model.get mine
@@ -159,21 +154,23 @@ _ = @_ or require 'underscore'
       options.success = (resp, status, xhr) =>
         models = []
         models.push = @model.new attrs for attrs in @parse resp
-        @[if options.add then 'add' else 'reset'] models
-        success @, resp, options if success
+        @remove @models unless options.add
+        @add resp
+        success? @, resp, options
         @trigger 'sync', @, resp, options
       options.error = Backbone.wrapError options.error, @, options
-      return @sync 'read', this, options
+      return (@sync or Backbone.sync) 'read', this, options
 
     save: (options) ->
       options = if options then _.clone options else {}
       success = options.success
+      return success? @, [], options unless @length
       options.success = (resp, status, xhr) =>
         @at(i).set attrs, xhr for attrs, i in @parse resp
-        success @, resp, options if success
+        success? @, resp, options
         @trigger 'sync', @, resp, options
       options.error = Backbone.wrapError options.error, @, options
-      return @sync 'create', this, options
+      return (@sync or Backbone.sync) 'create', this, options
 
     destroy: (options) ->
       options = if options then _.clone options else {}
@@ -181,10 +178,10 @@ _ = @_ or require 'underscore'
       options.success = (resp) ->
         for model in @models
           model.trigger 'destroy', model, model.collection, options
-          success model, resp, options if success
+        success? @, resp, options
         @trigger 'sync', @, resp, options
       options.error = Backbone.wrapError options.error, @, options
-      return @sync 'delete', @, options
+      return (@sync or Backbone.sync) 'delete', @, options
 
   Model
 
