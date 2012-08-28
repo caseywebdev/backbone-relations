@@ -299,7 +299,7 @@
           return _this.trigger('sync', _this, resp, options);
         };
         options.error = Backbone.wrapError(options.error, this, options);
-        return (this.sync || Backbone.sync)('create', this, options);
+        return (this.sync || Backbone.sync)('update', this, options);
       };
 
       Collection.prototype.destroy = function(options) {

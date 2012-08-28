@@ -170,7 +170,7 @@ _ = @_ or require 'underscore'
         success? @, resp, options
         @trigger 'sync', @, resp, options
       options.error = Backbone.wrapError options.error, @, options
-      return (@sync or Backbone.sync) 'create', this, options
+      return (@sync or Backbone.sync) 'update', this, options
 
     destroy: (options) ->
       options = if options then _.clone options else {}
