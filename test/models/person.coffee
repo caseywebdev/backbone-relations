@@ -1,7 +1,6 @@
 BackboneOrm = require('../../lib/backbone-orm')()
 
 module.exports = class Person extends BackboneOrm
-  urlRoot: '/people'
   relations:
     parents:
       hasMany: -> Person
@@ -27,5 +26,6 @@ module.exports = class Person extends BackboneOrm
 
 class Person.Collection extends BackboneOrm.Collection
   model: Person
+  url: '/people'
 
 Person.cache = new Person.Collection

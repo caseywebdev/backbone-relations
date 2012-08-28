@@ -136,7 +136,7 @@
         theirs = rel.theirFk;
         models = this.get[name] = new klass.Collection;
         models.url = function() {
-          return "" + ((typeof _this.url === "function" ? _this.url() : void 0) || _this.url) + (rel.urlRoot || ("/" + name));
+          return "" + ((typeof _this.url === "function" ? _this.url() : void 0) || _this.url) + (rel.url || ("/" + name));
         };
         (models.filters = {})[theirs] = this;
         klass.cache.on("add change:" + theirs, function(model) {
@@ -161,11 +161,11 @@
         theirs = rel.theirViaFk;
         models = this.get[name] = new klass.Collection;
         models.url = function() {
-          return "" + ((typeof _this.url === "function" ? _this.url() : void 0) || _this.url) + (rel.urlRoot || ("/" + name));
+          return "" + ((typeof _this.url === "function" ? _this.url() : void 0) || _this.url) + (rel.url || ("/" + name));
         };
         via = models.via = new viaKlass.Collection;
         via.url = function() {
-          return "" + ((typeof _this.url === "function" ? _this.url() : void 0) || _this.url) + viaKlass.prototype.urlRoot;
+          return "" + ((typeof _this.url === "function" ? _this.url() : void 0) || _this.url) + viaKlass.Collection.prototype.url;
         };
         (via.filters = {})[mine] = this;
         viaKlass.cache.on('add', function(model) {

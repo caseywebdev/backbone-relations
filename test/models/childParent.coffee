@@ -2,7 +2,6 @@ BackboneOrm = require('../../lib/backbone-orm')()
 
 module.exports = class ChildParent extends BackboneOrm
   compositeKey: ['childId', 'parentId']
-  urlRoot: '/child-parents'
   relations:
     child:
       hasOne: -> require './person'
@@ -13,5 +12,6 @@ module.exports = class ChildParent extends BackboneOrm
 
 class ChildParent.Collection extends BackboneOrm.Collection
   class: ChildParent
+  url: '/child-parents'
 
 ChildParent.cache = new ChildParent.Collection

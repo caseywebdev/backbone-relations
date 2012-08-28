@@ -72,7 +72,7 @@ _ = @_ or require 'underscore'
       theirs = rel.theirFk
       models = @get[name] = new klass.Collection
       models.url = =>
-        "#{@url?() or @url}#{rel.urlRoot or "/#{name}"}"
+        "#{@url?() or @url}#{rel.url or "/#{name}"}"
       (models.filters = {})[theirs] = @
 
       klass.cache.on "add change:#{theirs}", (model) =>
@@ -91,10 +91,10 @@ _ = @_ or require 'underscore'
       theirs = rel.theirViaFk
       models = @get[name] = new klass.Collection
       models.url = =>
-        "#{@url?() or @url}#{rel.urlRoot or "/#{name}"}"
+        "#{@url?() or @url}#{rel.url or "/#{name}"}"
       via = models.via = new viaKlass.Collection
       via.url = =>
-        "#{@url?() or @url}#{viaKlass.prototype.urlRoot}"
+        "#{@url?() or @url}#{viaKlass.Collection.prototype.url}"
       (via.filters = {})[mine] = @
 
       viaKlass.cache.on 'add', (model) =>
