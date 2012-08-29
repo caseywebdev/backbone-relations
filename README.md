@@ -12,6 +12,46 @@ Install
 npm install backbone-rels
 ```
 
+Use
+---
+
+Check out the test models for examples. Basically...
+
+```coffee
+class MyModel extends BackboneRels.Model
+  rels:
+    modelA:
+      hasOne: ModelA
+      myFk: 'modelAId'
+    modelBs:
+      hasMany: ModelB
+      theirFk: 'myModelId'
+    modelCs:
+      hasMany: ModelC
+      via: JoinModel
+      myViaFk: 'myModelId'
+      theirViaFk: 'modelCId'
+  @Collection: class extends BackboneRels.Collection
+    url: '/my-models'
+MyModel.setup()
+```
+
+Will give you...
+
+```
+myModel = MyModel.new()
+modelA = ModelA.new()
+myModel.set.modelA modelA
+myModel.get 'modelAId' # modelA.id
+myModel.get.modelA # modelA
+myModel.get.modelBs # ModelB.Collection
+myModel.get.modelCs # ModelC.Collection
+myModel.get.modelCs.via # JoinModel.Collection
+myModel.get.modelCs.add ModelC.new()
+myModel.get.modelCs.length # 1
+myModel.get.modelCs.via.length # 1
+```
+
 Test
 ----
 
