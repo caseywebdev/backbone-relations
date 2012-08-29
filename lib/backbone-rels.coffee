@@ -136,7 +136,7 @@ _ = @_ or require 'underscore'
       super arguments...
 
     @setup: ->
-      @Collection.model = @
+      @Collection.prototype.model = @
       @cache = new @Collection
 
   class Collection extends Backbone.Collection

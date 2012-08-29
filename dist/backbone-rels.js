@@ -220,7 +220,7 @@
       };
 
       Model.setup = function() {
-        this.Collection.model = this;
+        this.Collection.prototype.model = this;
         return this.cache = new this.Collection;
       };
 
