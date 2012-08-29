@@ -1,15 +1,15 @@
-[![Build Status](https://secure.travis-ci.org/caseywebdev/backbone-orm.png)](http://travis-ci.org/caseywebdev/backbone-orm)
+[![Build Status](https://secure.travis-ci.org/caseywebdev/backbone-rels.png)](http://travis-ci.org/caseywebdev/backbone-rels)
 
-backbone-orm
+backbone-rels
 ===
 
-Backbone Object Relational Mapping
+Backbone one-to-one, one-to-many, and many-to-many relationships for the browser and nodejs.
 
 Install
 -------
 
 ```bash
-npm install backbone-orm
+npm install backbone-rels
 ```
 
 Test

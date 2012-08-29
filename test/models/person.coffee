@@ -1,7 +1,7 @@
-BackboneOrm = require('../../lib/backbone-orm')()
+BackboneRels = require('../../lib/backbone-rels')()
 
-module.exports = class Person extends BackboneOrm
-  relations:
+module.exports = class Person extends BackboneRels.Model
+  rels:
     parents:
       hasMany: -> Person
       via: -> require './childParent'
@@ -24,8 +24,7 @@ module.exports = class Person extends BackboneOrm
       hasMany: -> Person
       theirFk: 'idolId'
 
-class Person.Collection extends BackboneOrm.Collection
-  model: Person
-  url: '/people'
+  @Collection: class extends BackboneRels.Collection
+    url: '/people'
 
-Person.cache = new Person.Collection
+Person.setup()

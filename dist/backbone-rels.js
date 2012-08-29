@@ -6,8 +6,8 @@
 
   _ = this._ || require('underscore');
 
-  ((typeof module !== "undefined" && module !== null) && module || {}).exports = this.BackboneOrm = function(Backbone) {
-    var Model, getModel;
+  ((typeof module !== "undefined" && module !== null) && module || {}).exports = this.BackboneRels = function(Backbone) {
+    var Collection, Model, getModel;
     if (Backbone == null) {
       Backbone = this.Backbone || require('backbone');
     }
@@ -40,7 +40,7 @@
         Model.__super__.initialize.apply(this, arguments);
         this._previousId = this.id = this._generateId();
         this.constructor.cache.add(this);
-        return this._hookRelations();
+        return this._hookRels();
       };
 
       Model.prototype._generateId = function(attributes) {
@@ -63,14 +63,14 @@
         return vals.join('-');
       };
 
-      Model.prototype._hookRelations = function() {
+      Model.prototype._hookRels = function() {
         var name, rel, _ref, _results;
-        if (!this.relations) {
+        if (!this.rels) {
           return;
         }
         this.get = _.bind(this.get, this);
         this.set = _.bind(this.set, this);
-        _ref = this.relations;
+        _ref = this.rels;
         _results = [];
         for (name in _ref) {
           rel = _ref[name];
@@ -204,22 +204,12 @@
       };
 
       Model.prototype.via = function(rel, id) {
-        var group, via, _i, _len,
-          _this = this;
+        var _this = this;
         if (id != null ? id.id : void 0) {
           id = id.id;
         }
-        if (group = this.relations[rel].group) {
-          for (_i = 0, _len = group.length; _i < _len; _i++) {
-            rel = group[_i];
-            if (via = this.via(rel, id)) {
-              return via;
-            }
-          }
-          return void 0;
-        }
         return this.get[rel].via.find(function(model) {
-          return id === model.get(_this.relations[rel].theirViaFk);
+          return id === model.get(_this.rels[rel].theirViaFk);
         });
       };
 
@@ -229,10 +219,15 @@
         return Model.__super__.change.apply(this, arguments);
       };
 
+      Model.setup = function() {
+        this.Collection.model = this;
+        return this.cache = new this.Collection;
+      };
+
       return Model;
 
     })(Backbone.Model);
-    Model.Collection = (function(_super) {
+    Collection = (function(_super) {
 
       __extends(Collection, _super);
 
@@ -325,7 +320,10 @@
       return Collection;
 
     })(Backbone.Collection);
-    return Model;
+    return {
+      Model: Model,
+      Collection: Collection
+    };
   };
 
   if (typeof Backbone !== "undefined" && Backbone !== null) {

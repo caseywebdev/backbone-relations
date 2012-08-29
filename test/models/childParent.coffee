@@ -1,8 +1,8 @@
-BackboneOrm = require('../../lib/backbone-orm')()
+BackboneRels = require('../../lib/backbone-rels')()
 
-module.exports = class ChildParent extends BackboneOrm
+module.exports = class ChildParent extends BackboneRels.Model
   compositeKey: ['childId', 'parentId']
-  relations:
+  rels:
     child:
       hasOne: -> require './person'
       myFk: 'childId'
@@ -10,8 +10,7 @@ module.exports = class ChildParent extends BackboneOrm
       hasOne: -> require './person'
       myFk: 'parentId'
 
-class ChildParent.Collection extends BackboneOrm.Collection
-  class: ChildParent
-  url: '/child-parents'
+  @Collection: class extends BackboneRels.Collection
+    url: '/child-parents'
 
-ChildParent.cache = new ChildParent.Collection
+ChildParent.setup()

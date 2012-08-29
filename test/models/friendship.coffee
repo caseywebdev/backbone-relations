@@ -1,8 +1,8 @@
-BackboneOrm = require('../../lib/backbone-orm')()
+BackboneRels = require('../../lib/backbone-rels')()
 
-module.exports = class Friendship extends BackboneOrm
+module.exports = class Friendship extends BackboneRels.Model
   compositeKey: ['frienderId', 'friendeeId']
-  relations:
+  rels:
     friender:
       hasOne: -> require './person'
       myFk: 'frienderId'
@@ -10,8 +10,7 @@ module.exports = class Friendship extends BackboneOrm
       hasOne: -> require './person'
       myFk: 'friendeeId'
 
-class Friendship.Collection extends BackboneOrm.Collection
-  class: Friendship
-  url: '/friendships'
+  @Collection: class extends BackboneRels.Collection
+    url: '/friendships'
 
-Friendship.cache = new Friendship.Collection
+Friendship.setup()

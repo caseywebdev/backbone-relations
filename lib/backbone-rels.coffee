@@ -1,6 +1,6 @@
 _ = @_ or require 'underscore'
 
-(module? and module or {}).exports = @BackboneOrm =
+(module? and module or {}).exports = @BackboneRels =
 (Backbone = @Backbone or require 'backbone') ->
   getModel = (val) -> if val instanceof Model then val else val()
 
@@ -13,7 +13,7 @@ _ = @_ or require 'underscore'
       super arguments...
       @_previousId = @id = @_generateId()
       @constructor.cache.add @
-      @_hookRelations()
+      @_hookRels()
 
     _generateId: (attributes = @attributes or {}) ->
       return attributes[@idAttribute] unless @compositeKey
@@ -23,17 +23,17 @@ _ = @_ or require 'underscore'
         vals.push val
       vals.join '-'
 
-    _hookRelations: ->
+    _hookRels: ->
 
-      # Check for the relations definition
-      return unless @relations
+      # Check for the associations definition
+      return unless @rels
 
       # Create instance copies for modifying
       @get = _.bind @get, @
       @set = _.bind @set, @
 
       # Start building
-      for name, rel of @relations
+      for name, rel of @rels
         if rel.hasOne
           @_hookHasOne name, rel
         else if rel.via
@@ -127,19 +127,19 @@ _ = @_ or require 'underscore'
 
     via: (rel, id) ->
       id = id.id if id?.id
-      if group = @relations[rel].group
-        for rel in group when via = @via rel, id
-          return via
-        return undefined
       @get[rel].via.find (model) =>
-        id is model.get @relations[rel].theirViaFk
+        id is model.get @rels[rel].theirViaFk
 
     change: ->
       @_previousId = @id
       @id = @_generateId()
       super arguments...
 
-  class Model.Collection extends Backbone.Collection
+    @setup: ->
+      @Collection.model = @
+      @cache = new @Collection
+
+  class Collection extends Backbone.Collection
     model: Model
 
     _onModelEvent: (event, model, collection, options) ->
@@ -183,6 +183,6 @@ _ = @_ or require 'underscore'
       options.error = Backbone.wrapError options.error, @, options
       return (@sync or Backbone.sync) 'delete', @, options
 
-  Model
+  {Model, Collection}
 
 @BackboneOrm = @BackboneOrm() if Backbone?
