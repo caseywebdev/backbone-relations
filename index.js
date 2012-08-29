@@ -1,1 +1,1 @@
-module.exports = require('./dist/backbone-associations');
+module.exports = require('./dist/backbone-rels');
