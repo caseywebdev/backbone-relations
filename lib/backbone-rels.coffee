@@ -185,4 +185,4 @@ _ = @_ or require 'underscore'
 
   {Model, Collection}
 
-@BackboneOrm = @BackboneOrm() if Backbone?
+@BackboneRels = @BackboneRels() if Backbone?

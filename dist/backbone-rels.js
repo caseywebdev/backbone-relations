@@ -327,7 +327,7 @@
   };
 
   if (typeof Backbone !== "undefined" && Backbone !== null) {
-    this.BackboneOrm = this.BackboneOrm();
+    this.BackboneRels = this.BackboneRels();
   }
 
 }).call(this);
