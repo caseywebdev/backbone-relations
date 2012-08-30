@@ -18,6 +18,24 @@ Use
 Check out the test models for examples. Basically...
 
 ```coffee
+Rels = require 'backbone-rels'
+```
+
+You can optionally bind Rels to your own Backbone instance (rather than the
+stock one) like so...
+
+```coffee
+Backbone = require 'backbone'
+Rels = require('backbone-rels') Backbone
+```
+
+You'll want to do this if you've overridden methods on Backbone, like `sync`,
+for example, and you want to maintain proper inheritance. This is not an issue
+in the browser, however.
+
+Once you have a `Rels` reference...
+
+```coffee
 class MyModel extends BackboneRels.Model
   rels:
     modelA:
@@ -31,12 +49,12 @@ class MyModel extends BackboneRels.Model
       via: JoinModel
       myViaFk: 'myModelId'
       theirViaFk: 'modelCId'
-  @Collection: class extends BackboneRels.Collection
-    url: '/my-models'
-MyModel.setup()
+class MyModel.Collection extends BackboneRels.Collection
+  model: MyModel
+  url: '/my-models'
 ```
 
-Will give you...
+With this structure in place, you can now do this...
 
 ```
 myModel = MyModel.new()
@@ -51,6 +69,8 @@ myModel.get.modelCs.add ModelC.new()
 myModel.get.modelCs.length # 1
 myModel.get.modelCs.via.length # 1
 ```
+
+Check out the tests for more examples.
 
 Test
 ----
