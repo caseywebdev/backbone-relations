@@ -1,25 +1,32 @@
 _ = @_ or require 'underscore'
 
-(module? and module or {}).exports = @BackboneRels =
-(Backbone = @Backbone or require 'backbone') ->
-  getModel = (val) -> if val instanceof Model then val else val()
-
+bind = (Backbone = @Backbone or require 'backbone') ->
   class Model extends Backbone.Model
-    @new: (attributes) ->
-      model = @cache.get @prototype._generateId attributes
+
+    # Return the cache collection for this model
+    @cache: -> @_cache or= new @Collection
+
+    # `cache` instance alias
+    cache: -> @constructor.cache()
+
+    # Search the cache first, then return a new model
+    @new: (attrs) ->
+      model = @cache().get @prototype._generateId attrs
       model?.set(arguments...) or new @ arguments...
+
+    # `new` instance alias
+    new: -> @constructor.new arguments...
 
     initialize: ->
       super arguments...
-      @_previousId = @id = @_generateId()
-      @constructor.cache.add @
+      @cache().add @
       @_hookRels()
 
-    _generateId: (attributes = @attributes or {}) ->
-      return attributes[@idAttribute] unless @compositeKey
+    _generateId: (attrs = @attributes) ->
+      return attrs[@idAttribute] unless @compositeKey
       vals = []
       for index in @compositeKey
-        return undefined unless (val = attributes[index])?
+        return undefined unless (val = attrs[index])?
         vals.push val
       vals.join '-'
 
@@ -28,11 +35,11 @@ _ = @_ or require 'underscore'
       # Check for the associations definition
       return unless @rels
 
-      # Create instance copies for modifying
+      # Create copies for modifying
       @get = _.bind @get, @
       @set = _.bind @set, @
 
-      # Start building
+      # Start hooking (that sounds scandalous)
       for name, rel of @rels
         if rel.hasOne
           @_hookHasOne name, rel
@@ -42,10 +49,14 @@ _ = @_ or require 'underscore'
           @_hookHasMany name, rel
 
     _hookHasOne: (name, rel) ->
-      klass = if (k = rel.hasOne) instanceof Model then k else k()
+      ctor = getCtor rel.hasOne
       mine = rel.myFk
 
-      onDestroyModel = =>
+      onChangeId = =>
+        @set mine, @get[name].id
+
+      onDestroy = =>
+        delete @get[name]
         if rel.romeo
           @trigger 'destroy', @, @collection
         else
@@ -54,60 +65,65 @@ _ = @_ or require 'underscore'
       @set[name] = (next) =>
         prev = @get[name]
         return if next is prev
-        prev.off 'destroy', onDestroyModel if prev
+        if prev
+          prev.off 'change:id', onChangeId
+          prev.off 'destroy', onDestroy
         @get[name] = next
         @set mine, next?.id
-        next.on 'destroy', onDestroyModel if next
+        if next
+          next.on 'change:id', onChangeId
+          next.on 'destroy', onDestroy
 
-      @set[name] klass.new id: @get mine if @get mine
+      (onChangeMine = =>
+        @set[name] ctor.cache().get @get mine
+      )()
 
-      klass.cache.on 'add', (model) =>
+      @on "change:#{mine}", onChangeMine
+
+      ctor.cache().on 'add', (model) =>
         @set[name] model if model.id is @get mine
 
-      @on "change:#{mine}", =>
-        @set[name] if @get mine then klass.new id: @get mine else undefined
-
     _hookHasMany: (name, rel) ->
-      klass = getModel rel.hasMany
+      ctor = getCtor rel.hasMany
       theirs = rel.theirFk
-      models = @get[name] = new klass.Collection
+      models = @get[name] = new ctor.Collection
       models.url = =>
         "#{@url?() or @url}#{rel.url or "/#{name}"}"
       (models.filters = {})[theirs] = @
 
-      klass.cache.on "add change:#{theirs}", (model) =>
+      ctor.cache().on "add change:#{theirs}", (model) =>
         models.add model if @id is model.get theirs
 
       models.on "change:#{theirs}", (model) ->
         models.remove model
 
-      models.add klass.cache.filter (model) =>
+      models.add ctor.cache().filter (model) =>
         @id is model.get theirs
 
     _hookHasManyVia: (name, rel) ->
-      klass = getModel rel.hasMany
-      viaKlass = getModel rel.via
+      ctor = getCtor rel.hasMany
+      viaCtor = getCtor rel.via
       mine = rel.myViaFk
       theirs = rel.theirViaFk
-      models = @get[name] = new klass.Collection
+      models = @get[name] = new ctor.Collection
       models.url = =>
         "#{@url?() or @url}#{rel.url or "/#{name}"}"
-      via = models.via = new viaKlass.Collection
+      via = models.via = new viaCtor.Collection
       via.url = =>
-        "#{@url?() or @url}#{viaKlass.Collection.prototype.url}"
+        "#{@url?() or @url}#{viaCtor.Collection.prototype.url}"
       (via.filters = {})[mine] = @
 
-      viaKlass.cache.on 'add', (model) =>
+      viaCtor.cache().on 'add', (model) =>
         via.add model if @id is model.get mine
 
       via
         .on('add', (model) ->
-          models.add klass.new id: model.get theirs
+          models.add ctor.new id: model.get theirs
         )
         .on 'remove', (model) ->
           models.remove models.get model.get theirs
 
-      klass.cache.on 'add', (model) ->
+      ctor.cache().on 'add', (model) ->
         if (via.find (model2) -> model2.get theirs is model.id)
           models.add model
 
@@ -116,13 +132,13 @@ _ = @_ or require 'underscore'
           attributes = {}
           attributes[mine] = @id
           attributes[theirs] = model.id
-          via.add viaKlass.new attributes
+          via.add viaCtor.new attributes
         )
         .on 'remove', (model) ->
           via.remove via.find (model2) ->
             model.id is model2.get theirs
 
-      via.add viaKlass.cache.filter (model) =>
+      via.add viaCtor.cache().filter (model) =>
         @id is model.get mine
 
     via: (rel, id) ->
@@ -130,14 +146,11 @@ _ = @_ or require 'underscore'
       @get[rel].via.find (model) =>
         id is model.get @rels[rel].theirViaFk
 
+    # Override to account for composite keys
     change: ->
       @_previousId = @id
       @id = @_generateId()
       super arguments...
-
-    @setup: ->
-      @Collection.prototype.model = @
-      @cache = new @Collection
 
   class Collection extends Backbone.Collection
     model: Model
@@ -183,6 +196,10 @@ _ = @_ or require 'underscore'
       options.error = Backbone.wrapError options.error, @, options
       return (@sync or Backbone.sync) 'delete', @, options
 
-  {Model, Collection}
+  getCtor = (val) -> if val instanceof Model then val else val()
 
-@BackboneRels = @BackboneRels() if Backbone?
+  Backbone.Rels = {Model, Collection}
+
+(module? and module or {}).exports = Rels = (Backbone) ->
+  _.extend @constructor, bind Backbone
+_.extend Rels, bind()

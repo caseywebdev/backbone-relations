@@ -1,6 +1,7 @@
-BackboneRels = require('../../lib/backbone-rels')()
+Rels = require '../../lib/backbone-rels'
 
-module.exports = class Person extends BackboneRels.Model
+module.exports =
+class Person extends Rels.Model
   rels:
     parents:
       hasMany: -> Person
@@ -24,7 +25,6 @@ module.exports = class Person extends BackboneRels.Model
       hasMany: -> Person
       theirFk: 'idolId'
 
-  @Collection: class extends BackboneRels.Collection
-    url: '/people'
-
-Person.setup()
+class Person.Collection extends Rels.Collection
+  model: Person
+  url: '/people'

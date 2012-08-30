@@ -1,6 +1,7 @@
-BackboneRels = require('../../lib/backbone-rels')()
+Rels = require '../../lib/backbone-rels'
 
-module.exports = class Friendship extends BackboneRels.Model
+module.exports =
+class Friendship extends Rels.Model
   compositeKey: ['frienderId', 'friendeeId']
   rels:
     friender:
@@ -10,7 +11,6 @@ module.exports = class Friendship extends BackboneRels.Model
       hasOne: -> require './person'
       myFk: 'friendeeId'
 
-  @Collection: class extends BackboneRels.Collection
-    url: '/friendships'
-
-Friendship.setup()
+class Friendship.Collection extends Rels.Collection
+  model: Friendship
+  url: '/friendships'

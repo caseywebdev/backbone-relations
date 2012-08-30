@@ -1,6 +1,7 @@
-BackboneRels = require('../../lib/backbone-rels')()
+Rels = require '../../lib/backbone-rels'
 
-module.exports = class ChildParent extends BackboneRels.Model
+module.exports =
+class ChildParent extends Rels.Model
   compositeKey: ['childId', 'parentId']
   rels:
     child:
@@ -10,7 +11,6 @@ module.exports = class ChildParent extends BackboneRels.Model
       hasOne: -> require './person'
       myFk: 'parentId'
 
-  @Collection: class extends BackboneRels.Collection
-    url: '/child-parents'
-
-ChildParent.setup()
+class ChildParent.Collection extends Rels.Collection
+  model: ChildParent
+  url: '/child-parents'

@@ -3,19 +3,20 @@ Person = require './models/person'
 
 # Needs tests
 describe 'People', ->
-  mom = Person.new
+  mom = new Person
     id: 1
     idolId: 6
-  dad = Person.new
+  dad = new Person
     id: 2
-  childA = Person.new
+  childA = new Person
     id: 3
-  childB = Person.new
+  childB = new Person
     id: 4
-  childC = Person.new
+  childC = new Person
     id: 5
-  rockstar = Person.new
+  rockstar = new Person
     id: 6
+    name: 'Elvis'
 
   mom.get.children.add childA
   mom.get.children.add childB
@@ -29,30 +30,30 @@ describe 'People', ->
   childB.set.idol rockstar
 
   it 'should set children', ->
-    mom.get.children.models.should.include childA
-    mom.get.children.models.should.include childB
-    dad.get.children.models.should.include childB
-    dad.get.children.models.should.include childC
+    mom.get.children.include(childA).should.be.true
+    mom.get.children.include(childB).should.be.true
+    dad.get.children.include(childB).should.be.true
+    dad.get.children.include(childC).should.be.true
 
   it 'should set parents', ->
-    childA.get.parents.should.include mom
-    childB.get.parents.should.include mom
-    childB.get.parents.should.include dad
-    childC.get.parents.should.include dad
+    childA.get.parents.include(mom).should.be.true
+    childB.get.parents.include(mom).should.be.true
+    childB.get.parents.include(dad).should.be.true
+    childC.get.parents.include(dad).should.be.true
 
   it 'should set friends', ->
-    childA.get.friends.models.should.include childB
-    childB.get.friends.models.should.include childC
+    childA.get.friends.include(childB).should.be.true
+    childB.get.friends.include(childC).should.be.true
 
   it 'should set idol', ->
     mom.get.idol.should.equal rockstar
     childA.get.idol.should.equal rockstar
-    childB.get.idol.should.equal rockstar
+    childB.get.idol.get('name').should.equal 'Elvis'
 
   it 'should set fans', ->
-    rockstar.get.fans.models.should.include mom
-    rockstar.get.fans.models.should.include childA
-    rockstar.get.fans.models.should.include childB
+    rockstar.get.fans.include(mom).should.be.true
+    rockstar.get.fans.include(childA).should.be.true
+    rockstar.get.fans.include(childB).should.be.true
 
   it 'should form correct urls', ->
     mom.get.children.url().should.equal '/people/1/children'
