@@ -1,7 +1,6 @@
-[![Build Status](https://secure.travis-ci.org/caseywebdev/backbone-rels.png)](http://travis-ci.org/caseywebdev/backbone-rels)
-
 backbone-rels
-===
+=============
+[![Build Status](https://secure.travis-ci.org/caseywebdev/backbone-rels.png)](http://travis-ci.org/caseywebdev/backbone-rels)
 
 Backbone one-to-one, one-to-many, and many-to-many relationships for the browser and nodejs.
 
