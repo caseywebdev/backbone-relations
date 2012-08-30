@@ -56,7 +56,7 @@ class MyModel.Collection extends BackboneRels.Collection
 
 With this structure in place, you can now do this...
 
-```
+```coffee
 myModel = MyModel.new()
 modelA = ModelA.new()
 myModel.set.modelA modelA
