@@ -12,4 +12,4 @@ dev:
 test:
 	$(MOCHA)
 
-.PHONY: all test
+.PHONY: test

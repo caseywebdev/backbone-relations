@@ -7,9 +7,11 @@ class Friendship extends Rels.Model
     friender:
       hasOne: -> require './person'
       myFk: 'frienderId'
+      romeo: true
     friendee:
       hasOne: -> require './person'
       myFk: 'friendeeId'
+      romeo: true
 
 class Friendship.Collection extends Rels.Collection
   model: Friendship

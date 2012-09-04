@@ -7,9 +7,11 @@ class ChildParent extends Rels.Model
     child:
       hasOne: -> require './person'
       myFk: 'childId'
+      romeo: true
     parent:
       hasOne: -> require './person'
       myFk: 'parentId'
+      romeo: true
 
 class ChildParent.Collection extends Rels.Collection
   model: ChildParent

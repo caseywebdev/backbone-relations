@@ -109,8 +109,7 @@ bind = (Backbone = @Backbone or require 'backbone') ->
       models.url = =>
         "#{@url?() or @url}#{rel.url or "/#{name}"}"
       via = models.via = new viaCtor.Collection
-      via.url = =>
-        "#{@url?() or @url}#{viaCtor.Collection.prototype.url}"
+      via.url = => "#{@url?() or @url}#{viaCtor.Collection::url}"
       (via.filters = {})[mine] = @
 
       viaCtor.cache().on 'add', (model) =>
