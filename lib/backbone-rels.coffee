@@ -19,6 +19,7 @@ bind = (Backbone = @Backbone or require 'backbone') ->
 
     initialize: ->
       super arguments...
+      @_previousId = @id = @_generateId()
       @cache().add @
       @_hookRels()
 

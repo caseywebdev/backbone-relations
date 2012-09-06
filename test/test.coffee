@@ -63,3 +63,6 @@ describe 'People', ->
     mom.get.idol.url().should.equal '/people/6'
     rockstar.get.fans.url().should.equal '/people/6/fans'
     mom.get.children.via.at(0).url().should.equal '/child-parents/3-1'
+
+  it 'should not repeat composite keys in collections', ->
+    mom.get.children.via.length.should.equal 2

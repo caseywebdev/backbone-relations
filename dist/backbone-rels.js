@@ -44,6 +44,7 @@
 
       Model.prototype.initialize = function() {
         Model.__super__.initialize.apply(this, arguments);
+        this._previousId = this.id = this._generateId();
         this.cache().add(this);
         return this._hookRels();
       };
