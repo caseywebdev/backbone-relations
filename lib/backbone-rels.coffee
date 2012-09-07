@@ -18,7 +18,7 @@ bind = (Backbone = @Backbone or require 'backbone') ->
     new: -> @constructor.new arguments...
 
     initialize: ->
-      super arguments...
+      super
       @_previousId = @id = @_generateId()
       @cache().add @
       @_hookRels()
@@ -150,7 +150,7 @@ bind = (Backbone = @Backbone or require 'backbone') ->
     change: ->
       @_previousId = @id
       @id = @_generateId()
-      super arguments...
+      super
 
   class Collection extends Backbone.Collection
     model: Model
@@ -159,7 +159,7 @@ bind = (Backbone = @Backbone or require 'backbone') ->
       if model and event is 'change' and model.id isnt model._previousId
         delete @_byId[model._previousId];
         @_byId[model.id] = model if model.id?
-      super arguments...
+      super
 
     fetch: (options) ->
       options = if options then _.clone options else {}
