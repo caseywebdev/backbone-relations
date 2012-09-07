@@ -166,9 +166,9 @@ bind = (Backbone = @Backbone or require 'backbone') ->
       success = options.success
       options.success = (resp, status, xhr) =>
         models = []
-        models.push = @model.new attrs for attrs in @parse resp
+        models.push @model.new attrs for attrs in @parse resp
         @remove @models unless options.add
-        @add resp
+        @add models
         success? @, resp, options
         @trigger 'sync', @, resp, options
       options.error = Backbone.wrapError options.error, @, options

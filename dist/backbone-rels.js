@@ -259,12 +259,12 @@
           _ref = _this.parse(resp);
           for (_i = 0, _len = _ref.length; _i < _len; _i++) {
             attrs = _ref[_i];
-            models.push = _this.model["new"](attrs);
+            models.push(_this.model["new"](attrs));
           }
           if (!options.add) {
             _this.remove(_this.models);
           }
-          _this.add(resp);
+          _this.add(models);
           if (typeof success === "function") {
             success(_this, resp, options);
           }
