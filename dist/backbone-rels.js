@@ -180,9 +180,12 @@
           }
         });
         via.on('add', function(model) {
-          return models.add(ctor["new"]({
-            id: model.get(theirs)
-          }));
+          var id;
+          if (!models.get((id = model.get(theirs)))) {
+            return models.add(ctor["new"]({
+              id: id
+            }));
+          }
         }).on('remove', function(model) {
           return models.remove(models.get(model.get(theirs)));
         });
@@ -195,10 +198,14 @@
         });
         models.on('add', function(model) {
           var attributes;
-          attributes = {};
-          attributes[mine] = _this.id;
-          attributes[theirs] = model.id;
-          return via.add(viaCtor["new"](attributes));
+          if (!(via.find(function(model2) {
+            return model2.get(theirs === model.id);
+          }))) {
+            attributes = {};
+            attributes[mine] = _this.id;
+            attributes[theirs] = model.id;
+            return via.add(viaCtor["new"](attributes));
+          }
         }).on('remove', function(model) {
           return via.remove(via.find(function(model2) {
             return model.id === model2.get(theirs);

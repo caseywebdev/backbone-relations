@@ -118,7 +118,8 @@ bind = (Backbone = @Backbone or require 'backbone') ->
 
       via
         .on('add', (model) ->
-          models.add ctor.new id: model.get theirs
+          unless models.get (id = model.get theirs)
+            models.add ctor.new {id}
         )
         .on 'remove', (model) ->
           models.remove models.get model.get theirs
@@ -129,10 +130,11 @@ bind = (Backbone = @Backbone or require 'backbone') ->
 
       models
         .on('add', (model) =>
-          attributes = {}
-          attributes[mine] = @id
-          attributes[theirs] = model.id
-          via.add viaCtor.new attributes
+          unless (via.find (model2) -> model2.get theirs is model.id)
+            attributes = {}
+            attributes[mine] = @id
+            attributes[theirs] = model.id
+            via.add viaCtor.new attributes
         )
         .on 'remove', (model) ->
           via.remove via.find (model2) ->
