@@ -142,7 +142,7 @@
         theirs = rel.theirFk;
         models = this.get[name] = new ctor.Collection;
         models.url = function() {
-          return "" + ((typeof _this.url === "function" ? _this.url() : void 0) || _this.url) + (rel.url || ("/" + name));
+          return "" + ((typeof _this.url === "function" ? _this.url() : void 0) || _this.url) + (_.result(rel.url) || ("/" + name));
         };
         (models.filters = {})[theirs] = this;
         ctor.cache().on("add change:" + theirs, function(model) {
@@ -167,7 +167,7 @@
         theirs = rel.theirViaFk;
         models = this.get[name] = new ctor.Collection;
         models.url = function() {
-          return "" + ((typeof _this.url === "function" ? _this.url() : void 0) || _this.url) + (rel.url || ("/" + name));
+          return "" + ((typeof _this.url === "function" ? _this.url() : void 0) || _this.url) + (_.result(rel.url) || ("/" + name));
         };
         via = models.via = new viaCtor.Collection;
         via.url = function() {
@@ -269,15 +269,14 @@
             models.push(_this.model["new"](attrs));
           }
           if (!options.add) {
-            _this.remove(_this.models);
+            _this.remove(_.difference(_this.models, models), options);
           }
-          _this.add(models);
+          _this.add(models, options);
           if (typeof success === "function") {
             success(_this, resp, options);
           }
           return _this.trigger('sync', _this, resp, options);
         };
-        options.error = Backbone.wrapError(options.error, this, options);
         return (this.sync || Backbone.sync)('read', this, options);
       };
 
@@ -290,18 +289,19 @@
           return typeof success === "function" ? success(this, [], options) : void 0;
         }
         options.success = function(resp, status, xhr) {
-          var attrs, i, _i, _len, _ref;
+          var attrs, _i, _len, _ref, _ref1;
           _ref = _this.parse(resp);
-          for (i = _i = 0, _len = _ref.length; _i < _len; i = ++_i) {
-            attrs = _ref[i];
-            _this.at(i).set(attrs, xhr);
+          for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+            attrs = _ref[_i];
+            if ((_ref1 = _this.get(attrs.id)) != null) {
+              _ref1.set(attrs, options);
+            }
           }
           if (typeof success === "function") {
             success(_this, resp, options);
           }
           return _this.trigger('sync', _this, resp, options);
         };
-        options.error = Backbone.wrapError(options.error, this, options);
         return (this.sync || Backbone.sync)('update', this, options);
       };
 
@@ -309,6 +309,9 @@
         var success;
         options = options ? _.clone(options) : {};
         success = options.success;
+        if (!this.length) {
+          return typeof success === "function" ? success(this, [], options) : void 0;
+        }
         options.success = function(resp) {
           var model, _i, _len, _ref;
           _ref = this.models;
@@ -321,7 +324,6 @@
           }
           return this.trigger('sync', this, resp, options);
         };
-        options.error = Backbone.wrapError(options.error, this, options);
         return (this.sync || Backbone.sync)('delete', this, options);
       };
 

@@ -89,7 +89,7 @@ bind = (Backbone = @Backbone or require 'backbone') ->
       theirs = rel.theirFk
       models = @get[name] = new ctor.Collection
       models.url = =>
-        "#{@url?() or @url}#{rel.url or "/#{name}"}"
+        "#{@url?() or @url}#{_.result(rel.url) or "/#{name}"}"
       (models.filters = {})[theirs] = @
 
       ctor.cache().on "add change:#{theirs}", (model) =>
@@ -108,7 +108,7 @@ bind = (Backbone = @Backbone or require 'backbone') ->
       theirs = rel.theirViaFk
       models = @get[name] = new ctor.Collection
       models.url = =>
-        "#{@url?() or @url}#{rel.url or "/#{name}"}"
+        "#{@url?() or @url}#{_.result(rel.url) or "/#{name}"}"
       via = models.via = new viaCtor.Collection
       via.url = => "#{@url?() or @url}#{viaCtor.Collection::url}"
       (via.filters = {})[mine] = @
@@ -169,11 +169,10 @@ bind = (Backbone = @Backbone or require 'backbone') ->
       options.success = (resp, status, xhr) =>
         models = []
         models.push @model.new attrs for attrs in @parse resp
-        @remove @models unless options.add
-        @add models
+        @remove _.difference(@models, models), options unless options.add
+        @add models, options
         success? @, resp, options
         @trigger 'sync', @, resp, options
-      options.error = Backbone.wrapError options.error, @, options
       return (@sync or Backbone.sync) 'read', this, options
 
     save: (options) ->
@@ -181,21 +180,20 @@ bind = (Backbone = @Backbone or require 'backbone') ->
       success = options.success
       return success? @, [], options unless @length
       options.success = (resp, status, xhr) =>
-        @at(i).set attrs, xhr for attrs, i in @parse resp
+        @get(attrs.id)?.set attrs, options for attrs in @parse resp
         success? @, resp, options
         @trigger 'sync', @, resp, options
-      options.error = Backbone.wrapError options.error, @, options
       return (@sync or Backbone.sync) 'update', this, options
 
     destroy: (options) ->
       options = if options then _.clone options else {}
       success = options.success
+      return success? @, [], options unless @length
       options.success = (resp) ->
         for model in @models
           model.trigger 'destroy', model, model.collection, options
         success? @, resp, options
         @trigger 'sync', @, resp, options
-      options.error = Backbone.wrapError options.error, @, options
       return (@sync or Backbone.sync) 'delete', @, options
 
   getCtor = (val) -> if val instanceof Model then val else val()
