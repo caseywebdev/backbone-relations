@@ -2,6 +2,7 @@ Rels = require '../../lib/backbone-rels'
 
 module.exports =
 class Person extends Rels.Model
+  cacheAll: true
   rels:
     parents:
       hasMany: -> Person

@@ -2,6 +2,7 @@ Rels = require '../../lib/backbone-rels'
 
 module.exports =
 class Friendship extends Rels.Model
+  cacheAll: true
   compositeKey: ['frienderId', 'friendeeId']
   rels:
     friender:

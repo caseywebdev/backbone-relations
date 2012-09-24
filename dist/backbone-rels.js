@@ -45,7 +45,9 @@
       Model.prototype.initialize = function() {
         Model.__super__.initialize.apply(this, arguments);
         this._previousId = this.id = this._generateId();
-        this.cache().add(this);
+        if (this.cacheAll) {
+          this.cache().add(this);
+        }
         return this._hookRels();
       };
 
@@ -169,6 +171,7 @@
         models.url = function() {
           return "" + ((typeof _this.url === "function" ? _this.url() : void 0) || _this.url) + (_.result(rel.url) || ("/" + name));
         };
+        models.mine = theirs;
         via = models.via = new viaCtor.Collection;
         via.url = function() {
           return "" + ((typeof _this.url === "function" ? _this.url() : void 0) || _this.url) + viaCtor.Collection.prototype.url;

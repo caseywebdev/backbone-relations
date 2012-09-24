@@ -20,7 +20,7 @@ bind = (Backbone = @Backbone or require 'backbone') ->
     initialize: ->
       super
       @_previousId = @id = @_generateId()
-      @cache().add @
+      @cache().add @ if @cacheAll
       @_hookRels()
 
     _generateId: (attrs = @attributes) ->
@@ -109,6 +109,7 @@ bind = (Backbone = @Backbone or require 'backbone') ->
       models = @get[name] = new ctor.Collection
       models.url = =>
         "#{@url?() or @url}#{_.result(rel.url) or "/#{name}"}"
+      models.mine = theirs
       via = models.via = new viaCtor.Collection
       via.url = => "#{@url?() or @url}#{viaCtor.Collection::url}"
       (via.filters = {})[mine] = @
