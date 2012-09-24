@@ -89,7 +89,7 @@ bind = (Backbone = @Backbone or require 'backbone') ->
       theirs = rel.theirFk
       models = @get[name] = new ctor.Collection
       models.url = =>
-        "#{@url?() or @url}#{_.result(rel.url) or "/#{name}"}"
+        "#{_.result @, 'url'}#{_.result(rel.url) or "/#{name}"}"
       (models.filters = {})[theirs] = @
 
       ctor.cache().on "add change:#{theirs}", (model) =>
@@ -108,46 +108,47 @@ bind = (Backbone = @Backbone or require 'backbone') ->
       theirs = rel.theirViaFk
       models = @get[name] = new ctor.Collection
       models.url = =>
-        "#{@url?() or @url}#{_.result(rel.url) or "/#{name}"}"
+        "#{_.result @, 'url'}#{_.result(rel.url) or "/#{name}"}"
       models.mine = theirs
       via = models.via = new viaCtor.Collection
-      via.url = => "#{@url?() or @url}#{viaCtor.Collection::url}"
+      via.url = =>
+        "#{_.result @, 'url'}#{_.result viaCtor.Collection::, 'url'}"
       (via.filters = {})[mine] = @
+      (attributes = {})[mine] = @id
 
       viaCtor.cache().on 'add', (model) =>
+        console.log model
         via.add model if @id is model.get mine
 
       via
         .on('add', (model) ->
-          unless models.get (id = model.get theirs)
-            models.add ctor.new {id}
+          models.add ctor.new id: model.get theirs
         )
         .on 'remove', (model) ->
           models.remove models.get model.get theirs
 
       ctor.cache().on 'add', (model) ->
-        if (via.find (model2) -> model2.get theirs is model.id)
-          models.add model
+        attributes[theirs] = model.id
+        models.add model if via.get viaCtor::_generateId attributes
 
       models
         .on('add', (model) =>
-          unless (via.find (model2) -> model2.get theirs is model.id)
-            attributes = {}
-            attributes[mine] = @id
-            attributes[theirs] = model.id
-            via.add viaCtor.new attributes
+          attributes[theirs] = model.id
+          via.add viaCtor.new attributes
         )
         .on 'remove', (model) ->
-          via.remove via.find (model2) ->
-            model.id is model2.get theirs
+          attributes[theirs] = model.id
+          via.remove via.get viaCtor::_generateId attributes
 
       via.add viaCtor.cache().filter (model) =>
         @id is model.get mine
 
     via: (rel, id) ->
-      id = id.id if id?.id
-      @get[rel].via.find (model) =>
-        id is model.get @rels[rel].theirViaFk
+      return unless id = id.id if id?.id
+      viaCtor = getCtor @rels[rel].via
+      (attributes = {})[@rels[rel].myViaFk] = @id
+      attributes[@rels[rel].theirViaFk] = id
+      @get[rel].via.get viaCtor::_generateId attributes
 
     # Override to account for composite keys
     change: ->
@@ -165,12 +166,15 @@ bind = (Backbone = @Backbone or require 'backbone') ->
       super
 
     fetch: (options) ->
-      options = if options then _.clone options else {}
+      options = _.extend
+        error: ->
+      , options
       success = options.success
+      options.merge = true
       options.success = (resp, status, xhr) =>
-        models = []
-        models.push @model.new attrs for attrs in @parse resp
-        @remove _.difference(@models, models), options unless options.add
+        models = (@model.new attrs for attrs in @parse resp)
+        ids = _.pluck models, 'id'
+        (@remove @reject (model) => model.id in ids) unless options.add
         @add models, options
         success? @, resp, options
         @trigger 'sync', @, resp, options

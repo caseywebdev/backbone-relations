@@ -2,7 +2,8 @@
 (function() {
   var Rels, bind, _,
     __hasProp = {}.hasOwnProperty,
-    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
 
   _ = this._ || require('underscore');
 
@@ -144,7 +145,7 @@
         theirs = rel.theirFk;
         models = this.get[name] = new ctor.Collection;
         models.url = function() {
-          return "" + ((typeof _this.url === "function" ? _this.url() : void 0) || _this.url) + (_.result(rel.url) || ("/" + name));
+          return "" + (_.result(_this, 'url')) + (_.result(rel.url) || ("/" + name));
         };
         (models.filters = {})[theirs] = this;
         ctor.cache().on("add change:" + theirs, function(model) {
@@ -161,7 +162,7 @@
       };
 
       Model.prototype._hookHasManyVia = function(name, rel) {
-        var ctor, mine, models, theirs, via, viaCtor,
+        var attributes, ctor, mine, models, theirs, via, viaCtor,
           _this = this;
         ctor = getCtor(rel.hasMany);
         viaCtor = getCtor(rel.via);
@@ -169,50 +170,40 @@
         theirs = rel.theirViaFk;
         models = this.get[name] = new ctor.Collection;
         models.url = function() {
-          return "" + ((typeof _this.url === "function" ? _this.url() : void 0) || _this.url) + (_.result(rel.url) || ("/" + name));
+          return "" + (_.result(_this, 'url')) + (_.result(rel.url) || ("/" + name));
         };
         models.mine = theirs;
         via = models.via = new viaCtor.Collection;
         via.url = function() {
-          return "" + ((typeof _this.url === "function" ? _this.url() : void 0) || _this.url) + viaCtor.Collection.prototype.url;
+          return "" + (_.result(_this, 'url')) + (_.result(viaCtor.Collection.prototype, 'url'));
         };
         (via.filters = {})[mine] = this;
+        (attributes = {})[mine] = this.id;
         viaCtor.cache().on('add', function(model) {
+          console.log(model);
           if (_this.id === model.get(mine)) {
             return via.add(model);
           }
         });
         via.on('add', function(model) {
-          var id;
-          if (!models.get((id = model.get(theirs)))) {
-            return models.add(ctor["new"]({
-              id: id
-            }));
-          }
+          return models.add(ctor["new"]({
+            id: model.get(theirs)
+          }));
         }).on('remove', function(model) {
           return models.remove(models.get(model.get(theirs)));
         });
         ctor.cache().on('add', function(model) {
-          if (via.find(function(model2) {
-            return model2.get(theirs === model.id);
-          })) {
+          attributes[theirs] = model.id;
+          if (via.get(viaCtor.prototype._generateId(attributes))) {
             return models.add(model);
           }
         });
         models.on('add', function(model) {
-          var attributes;
-          if (!(via.find(function(model2) {
-            return model2.get(theirs === model.id);
-          }))) {
-            attributes = {};
-            attributes[mine] = _this.id;
-            attributes[theirs] = model.id;
-            return via.add(viaCtor["new"](attributes));
-          }
+          attributes[theirs] = model.id;
+          return via.add(viaCtor["new"](attributes));
         }).on('remove', function(model) {
-          return via.remove(via.find(function(model2) {
-            return model.id === model2.get(theirs);
-          }));
+          attributes[theirs] = model.id;
+          return via.remove(via.get(viaCtor.prototype._generateId(attributes)));
         });
         return via.add(viaCtor.cache().filter(function(model) {
           return _this.id === model.get(mine);
@@ -220,13 +211,14 @@
       };
 
       Model.prototype.via = function(rel, id) {
-        var _this = this;
-        if (id != null ? id.id : void 0) {
-          id = id.id;
+        var attributes, viaCtor;
+        if (!((id != null ? id.id : void 0) ? id = id.id : void 0)) {
+          return;
         }
-        return this.get[rel].via.find(function(model) {
-          return id === model.get(_this.rels[rel].theirViaFk);
-        });
+        viaCtor = getCtor(this.rels[rel].via);
+        (attributes = {})[this.rels[rel].myViaFk] = this.id;
+        attributes[this.rels[rel].theirViaFk] = id;
+        return this.get[rel].via.get(viaCtor.prototype._generateId(attributes));
       };
 
       Model.prototype.change = function() {
@@ -261,18 +253,29 @@
       Collection.prototype.fetch = function(options) {
         var success,
           _this = this;
-        options = options ? _.clone(options) : {};
+        options = _.extend({
+          error: function() {}
+        }, options);
         success = options.success;
+        options.merge = true;
         options.success = function(resp, status, xhr) {
-          var attrs, models, _i, _len, _ref;
-          models = [];
-          _ref = _this.parse(resp);
-          for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-            attrs = _ref[_i];
-            models.push(_this.model["new"](attrs));
-          }
+          var attrs, ids, models;
+          models = (function() {
+            var _i, _len, _ref, _results;
+            _ref = this.parse(resp);
+            _results = [];
+            for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+              attrs = _ref[_i];
+              _results.push(this.model["new"](attrs));
+            }
+            return _results;
+          }).call(_this);
+          ids = _.pluck(models, 'id');
           if (!options.add) {
-            _this.remove(_.difference(_this.models, models), options);
+            _this.remove(_this.reject(function(model) {
+              var _ref;
+              return _ref = model.id, __indexOf.call(ids, _ref) >= 0;
+            }));
           }
           _this.add(models, options);
           if (typeof success === "function") {
