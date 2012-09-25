@@ -180,7 +180,6 @@
         (via.filters = {})[mine] = this;
         (attributes = {})[mine] = this.id;
         viaCtor.cache().on('add', function(model) {
-          console.log(model);
           if (_this.id === model.get(mine)) {
             return via.add(model);
           }

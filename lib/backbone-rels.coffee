@@ -117,7 +117,6 @@ bind = (Backbone = @Backbone or require 'backbone') ->
       (attributes = {})[mine] = @id
 
       viaCtor.cache().on 'add', (model) =>
-        console.log model
         via.add model if @id is model.get mine
 
       via
