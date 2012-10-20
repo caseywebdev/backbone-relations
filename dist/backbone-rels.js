@@ -178,7 +178,7 @@
           return "" + (_.result(_this, 'url')) + (_.result(viaCtor.Collection.prototype, 'url'));
         };
         (via.filters = {})[mine] = this;
-        (attributes = {})[mine] = this.id;
+        attributes = {};
         viaCtor.cache().on('add', function(model) {
           if (_this.id === model.get(mine)) {
             return via.add(model);
@@ -192,15 +192,18 @@
           return models.remove(models.get(model.get(theirs)));
         });
         ctor.cache().on('add', function(model) {
+          attributes[mine] = this.id;
           attributes[theirs] = model.id;
           if (via.get(viaCtor.prototype._generateId(attributes))) {
             return models.add(model);
           }
         });
         models.on('add', function(model) {
+          attributes[mine] = _this.id;
           attributes[theirs] = model.id;
           return via.add(viaCtor["new"](attributes));
         }).on('remove', function(model) {
+          attributes[mine] = _this.id;
           attributes[theirs] = model.id;
           return via.remove(via.get(viaCtor.prototype._generateId(attributes)));
         });

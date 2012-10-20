@@ -114,7 +114,7 @@ bind = (Backbone = @Backbone or require 'backbone') ->
       via.url = =>
         "#{_.result @, 'url'}#{_.result viaCtor.Collection::, 'url'}"
       (via.filters = {})[mine] = @
-      (attributes = {})[mine] = @id
+      attributes = {}
 
       viaCtor.cache().on 'add', (model) =>
         via.add model if @id is model.get mine
@@ -127,15 +127,18 @@ bind = (Backbone = @Backbone or require 'backbone') ->
           models.remove models.get model.get theirs
 
       ctor.cache().on 'add', (model) ->
+        attributes[mine] = @id
         attributes[theirs] = model.id
         models.add model if via.get viaCtor::_generateId attributes
 
       models
         .on('add', (model) =>
+          attributes[mine] = @id
           attributes[theirs] = model.id
           via.add viaCtor.new attributes
         )
-        .on 'remove', (model) ->
+        .on 'remove', (model) =>
+          attributes[mine] = @id
           attributes[theirs] = model.id
           via.remove via.get viaCtor::_generateId attributes
 
