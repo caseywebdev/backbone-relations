@@ -195,8 +195,7 @@ bind = (Backbone = @Backbone or require 'backbone') ->
     destroy: (options) ->
       options = if options then _.clone options else {}
       success = options.success
-      return success? @, [], options unless @length
-      options.success = (resp) ->
+      options.success = (resp) =>
         for model in @models
           model.trigger 'destroy', model, model.collection, options
         success? @, resp, options

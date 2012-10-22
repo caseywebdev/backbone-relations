@@ -314,23 +314,21 @@
       };
 
       Collection.prototype.destroy = function(options) {
-        var success;
+        var success,
+          _this = this;
         options = options ? _.clone(options) : {};
         success = options.success;
-        if (!this.length) {
-          return typeof success === "function" ? success(this, [], options) : void 0;
-        }
         options.success = function(resp) {
           var model, _i, _len, _ref;
-          _ref = this.models;
+          _ref = _this.models;
           for (_i = 0, _len = _ref.length; _i < _len; _i++) {
             model = _ref[_i];
             model.trigger('destroy', model, model.collection, options);
           }
           if (typeof success === "function") {
-            success(this, resp, options);
+            success(_this, resp, options);
           }
-          return this.trigger('sync', this, resp, options);
+          return _this.trigger('sync', _this, resp, options);
         };
         return (this.sync || Backbone.sync)('delete', this, options);
       };
