@@ -146,8 +146,8 @@ _ = @_ or require 'underscore'
       attrs[@relations[rel].theirViaFk] = id
       @get[rel].via.get viaCtor::_generateId attrs
 
-  # Create a simple `_generateId` method if backbone-composite-keys hasn't
-  # been required.
+  # Create a `_generateId` method if backbone-composite-keys hasn't already
+  # done so.
   Backbone.Model::_generateId or= (attrs = @attributes) ->
     attrs[@idAttribute]
 
