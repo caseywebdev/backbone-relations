@@ -5,7 +5,7 @@
   _ = this._ || require('underscore');
 
   (typeof module !== "undefined" && module !== null ? module : {}).exports = bind = function(Backbone) {
-    var getCtor, hasMany, hasManyVia, hasOne, hook, initialize;
+    var getCtor, hasMany, hasManyVia, hasOne, hook, initialize, _base;
     getCtor = function(val) {
       if (val instanceof Backbone.Model) {
         return val;
@@ -161,9 +161,9 @@
         return this._cache || (this._cache = new this.Collection);
       },
       "new": function(attrs) {
-        var id, _ref;
-        id = this.prototype._generateId ? this.prototype._generateId(attrs) : attrs[this.prototype.idAttribute];
-        return ((_ref = this.cache().get(id)) != null ? _ref.set.apply(_ref, arguments) : void 0) || (function(func, args, ctor) {
+        var model;
+        model = this.cache().get(this.prototype._generateId(attrs));
+        return (model != null ? model.set.apply(model, arguments) : void 0) || (function(func, args, ctor) {
           ctor.prototype = func.prototype;
           var child = new ctor, result = func.apply(child, args), t = typeof result;
           return t == "object" || t == "function" ? result || child : child;
@@ -184,10 +184,17 @@
         if (!(id = (id != null ? id.id : void 0) || id)) {
           return;
         }
-        viaCtor = getCtor(this.rels[rel].via);
-        (attrs = {})[this.rels[rel].myViaFk] = this.id;
-        return attrs[this.rels[rel].theirViaFk] = id;
+        viaCtor = getCtor(this.relations[rel].via);
+        (attrs = {})[this.relations[rel].myViaFk] = this.id;
+        attrs[this.relations[rel].theirViaFk] = id;
+        return this.get[rel].via.get(viaCtor.prototype._generateId(attrs));
       }
+    });
+    (_base = Backbone.Model.prototype)._generateId || (_base._generateId = function(attrs) {
+      if (attrs == null) {
+        attrs = this.attributes;
+      }
+      return attrs[this.idAttribute];
     });
     return Backbone;
   };

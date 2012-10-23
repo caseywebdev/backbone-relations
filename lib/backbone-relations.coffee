@@ -127,11 +127,8 @@ _ = @_ or require 'underscore'
 
     # Search the cache first, then return a new model
     new: (attrs) ->
-      id =
-        if @::_generateId
-        then @::_generateId attrs
-        else attrs[@::idAttribute]
-      (@cache().get id)?.set(arguments...) or new @ arguments...
+      model = @cache().get @::_generateId attrs
+      model?.set(arguments...) or new @ arguments...
 
   # Save the original `initialize`
   initialize = Backbone.Model::initialize
@@ -144,9 +141,15 @@ _ = @_ or require 'underscore'
 
     via: (rel, id) ->
       return unless id = id?.id or id
-      viaCtor = getCtor @rels[rel].via
-      (attrs = {})[@rels[rel].myViaFk] = @id
-      attrs[@rels[rel].theirViaFk] = id
+      viaCtor = getCtor @relations[rel].via
+      (attrs = {})[@relations[rel].myViaFk] = @id
+      attrs[@relations[rel].theirViaFk] = id
+      @get[rel].via.get viaCtor::_generateId attrs
+
+  # Create a simple `_generateId` method if backbone-composite-keys hasn't
+  # been required.
+  Backbone.Model::_generateId or= (attrs = @attributes) ->
+    attrs[@idAttribute]
 
   Backbone
 

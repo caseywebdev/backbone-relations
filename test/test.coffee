@@ -68,3 +68,7 @@ describe 'People', ->
 
   it 'should not repeat composite keys in collections', ->
     mom.get.children.via.length.should.equal 2
+
+  it 'should grab correct join models via...uh...`via`', ->
+    mom.via('children', childA).id.should.equal '3-1'
+    childA.via('parents', mom).id.should.equal '3-1'
