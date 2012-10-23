@@ -1,26 +1,29 @@
 {
-  "name": "backbone-rels",
-  "version": "0.1.4",
+  "name": "backbone-relations",
+  "version": "0.0.1",
   "author": "Casey Foster <casey@caseywebdev.com>",
   "licence": "MIT",
+  "main": "dist/backbone-relations",
   "repository": {
     "type": "git",
-    "url": "https://github.com/caseywebdev/backbone-rels.git"
+    "url": "https://github.com/caseywebdev/backbone-relations"
   },
   "dependencies": {
-    "underscore": "x",
-    "backbone": "x"
+    "underscore": "x"
   },
   "devDependencies": {
     "coffee-script": "x",
     "mocha": "x",
-    "chai": "x"
+    "chai": "x",
+    "backbone": "git://github.com/documentcloud/backbone",
+    "backbone-composite-keys": "x"
   },
   "engines": {
     "node": "x",
     "npm": "x"
   },
   "scripts": {
-    "test": "make test"
+    "test": "node_modules/.bin/mocha",
+    "dev": "node_modules/.bin/coffee -cw -o dist lib"
   }
 }

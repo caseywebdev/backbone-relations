@@ -1,7 +1,9 @@
 should = require('chai').should()
+Backbone = require 'backbone'
+require('../') Backbone
+require('backbone-composite-keys') Backbone
 Person = require './models/person'
 
-# Needs tests
 describe 'People', ->
   mom = new Person
     id: 1

@@ -1,9 +1,9 @@
-Rels = require '../../lib/backbone-rels'
+Backbone = require 'backbone'
 
 module.exports =
-class Person extends Rels.Model
+class Person extends Backbone.Model
   cacheAll: true
-  rels:
+  relations:
     parents:
       hasMany: -> Person
       via: -> require './childParent'
@@ -26,6 +26,6 @@ class Person extends Rels.Model
       hasMany: -> Person
       theirFk: 'idolId'
 
-class Person.Collection extends Rels.Collection
+class Person.Collection extends Backbone.Collection
   model: Person
   url: '/people'

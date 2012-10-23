@@ -1,4 +1,4 @@
-backbone-rels [![Build Status](https://secure.travis-ci.org/caseywebdev/backbone-rels.png)](http://travis-ci.org/caseywebdev/backbone-rels)
+backbone-relations [![Build Status](https://secure.travis-ci.org/caseywebdev/backbone-relations.png)](http://travis-ci.org/caseywebdev/backbone-relations)
 =============
 
 Backbone one-to-one, one-to-many, and many-to-many relationships for the browser and nodejs.
@@ -7,74 +7,28 @@ Install
 -------
 
 ```bash
-npm install backbone-rels
+npm install backbone-relations
 ```
 
 Use
 ---
 
-Check out the test models for examples. Basically...
-
-```coffee
-Rels = require 'backbone-rels'
-```
-
-You can optionally bind Rels to your own Backbone instance (rather than the
-stock one) like so...
+This plugin extends the Backbone core, so you'll need to pass in your instance of Backbone.
 
 ```coffee
 Backbone = require 'backbone'
-Rels = require('backbone-rels') Backbone
+require('backbone-relations') Backbone
 ```
 
-You'll want to do this if you've overridden methods on Backbone, like `sync`,
-for example, and you want to maintain proper inheritance. This is not an issue
-in the browser, however.
+This is done automatically in the browser.
 
-Once you have a `Rels` reference...
-
-```coffee
-class MyModel extends BackboneRels.Model
-  rels:
-    modelA:
-      hasOne: ModelA
-      myFk: 'modelAId'
-    modelBs:
-      hasMany: ModelB
-      theirFk: 'myModelId'
-    modelCs:
-      hasMany: ModelC
-      via: JoinModel
-      myViaFk: 'myModelId'
-      theirViaFk: 'modelCId'
-class MyModel.Collection extends BackboneRels.Collection
-  model: MyModel
-  url: '/my-models'
-```
-
-With this structure in place, you can now do this...
-
-```coffee
-myModel = MyModel.new()
-modelA = ModelA.new()
-myModel.set.modelA modelA
-myModel.get 'modelAId' # modelA.id
-myModel.get.modelA # modelA
-myModel.get.modelBs # ModelB.Collection
-myModel.get.modelCs # ModelC.Collection
-myModel.get.modelCs.via # JoinModel.Collection
-myModel.get.modelCs.add ModelC.new()
-myModel.get.modelCs.length # 1
-myModel.get.modelCs.via.length # 1
-```
-
-Check out the tests for more examples.
+Check out the tests for examples.
 
 Test
 ----
 
 ```bash
-make test
+npm test
 ```
 
 Licence
