@@ -49,9 +49,8 @@ _ = @_ or require 'underscore'
         next.on 'change:id', onChangeId
         next.on 'destroy', onDestroy
 
-    (onChangeMine = ->
+    do onChangeMine = ->
       model.set[name] ctor.cache().get model.get mine
-    )()
 
     model.on "change:#{mine}", onChangeMine
 
