@@ -66,12 +66,14 @@ _ = @_ or require 'underscore'
     (models.filters = {})[theirs] = model
 
     ctor.cache().on "add change:#{theirs}", (other) ->
+      return unless other?.id
       models.add other if model.id is other.get theirs
 
     models.on "change:#{theirs}", (other) ->
       models.remove other
 
     models.add ctor.cache().filter (other) ->
+      return unless other.id
       model.id is other.get theirs
 
   hasManyVia = (model, name, rel) ->
@@ -90,24 +92,25 @@ _ = @_ or require 'underscore'
     attrs = {}
 
     viaCtor.cache().on 'add', (other) ->
-      via.add other if model.id is other.get mine
+      via.add other if model.id and model.id is other.get mine
 
     via
       .on('add', (other) ->
+        return unless other.get theirs
         models.add ctor.new id: other.get theirs
       )
       .on 'remove', (other) ->
         models.remove models.get other.get theirs
 
     ctor.cache().on 'add', (other) ->
-      attrs[mine] = model.id
-      attrs[theirs] = other.id
+      return unless attrs[mine] = model.id
+      return unless attrs[theirs] = other.id
       models.add other if via.get viaCtor::_generateId attrs
 
     models
       .on('add', (other) ->
-        attrs[mine] = model.id
-        attrs[theirs] = other.id
+        return unless attrs[mine] = model.id
+        return unless attrs[theirs] = other.id
         via.add viaCtor.new attrs
       )
       .on 'remove', (other) ->
@@ -116,6 +119,7 @@ _ = @_ or require 'underscore'
         via.remove via.get viaCtor::_generateId attrs
 
     via.add viaCtor.cache().filter (other) ->
+      return unless model.id
       model.id is other.get mine
 
   _.extend Backbone.Model,

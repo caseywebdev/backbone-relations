@@ -95,6 +95,9 @@
       };
       (models.filters = {})[theirs] = model;
       ctor.cache().on("add change:" + theirs, function(other) {
+        if (!(other != null ? other.id : void 0)) {
+          return;
+        }
         if (model.id === other.get(theirs)) {
           return models.add(other);
         }
@@ -103,6 +106,9 @@
         return models.remove(other);
       });
       return models.add(ctor.cache().filter(function(other) {
+        if (!other.id) {
+          return;
+        }
         return model.id === other.get(theirs);
       }));
     };
@@ -125,11 +131,14 @@
       (via.filters = {})[mine] = model;
       attrs = {};
       viaCtor.cache().on('add', function(other) {
-        if (model.id === other.get(mine)) {
+        if (model.id && model.id === other.get(mine)) {
           return via.add(other);
         }
       });
       via.on('add', function(other) {
+        if (!other.get(theirs)) {
+          return;
+        }
         return models.add(ctor["new"]({
           id: other.get(theirs)
         }));
@@ -137,15 +146,23 @@
         return models.remove(models.get(other.get(theirs)));
       });
       ctor.cache().on('add', function(other) {
-        attrs[mine] = model.id;
-        attrs[theirs] = other.id;
+        if (!(attrs[mine] = model.id)) {
+          return;
+        }
+        if (!(attrs[theirs] = other.id)) {
+          return;
+        }
         if (via.get(viaCtor.prototype._generateId(attrs))) {
           return models.add(other);
         }
       });
       models.on('add', function(other) {
-        attrs[mine] = model.id;
-        attrs[theirs] = other.id;
+        if (!(attrs[mine] = model.id)) {
+          return;
+        }
+        if (!(attrs[theirs] = other.id)) {
+          return;
+        }
         return via.add(viaCtor["new"](attrs));
       }).on('remove', function(other) {
         attrs[mine] = model.id;
@@ -153,6 +170,9 @@
         return via.remove(via.get(viaCtor.prototype._generateId(attrs)));
       });
       return via.add(viaCtor.cache().filter(function(other) {
+        if (!model.id) {
+          return;
+        }
         return model.id === other.get(mine);
       }));
     };
