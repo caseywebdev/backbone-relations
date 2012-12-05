@@ -79,7 +79,7 @@
       })();
       model.on("change:" + mine, onChangeMine);
       return ctor.cache().on('add', function(other) {
-        if (other.id === model.get(mine)) {
+        if (other.id == model.get(mine)) {
           return model.set[name](other);
         }
       });
@@ -98,7 +98,7 @@
         if (!(other != null ? other.id : void 0)) {
           return;
         }
-        if (model.id === other.get(theirs)) {
+        if (model.id == other.get(theirs)) {
           return models.add(other);
         }
       });
@@ -109,7 +109,7 @@
         if (!other.id) {
           return;
         }
-        return model.id === other.get(theirs);
+        return model.id == other.get(theirs);
       }));
     };
     hasManyVia = function(model, name, rel) {
@@ -131,7 +131,7 @@
       (via.filters = {})[mine] = model;
       attrs = {};
       viaCtor.cache().on('add', function(other) {
-        if (model.id && String(model.id) === String(other.get(mine))) {
+        if (model.id && model.id == other.get(mine)) {
           return via.add(other);
         }
       });
@@ -170,10 +170,7 @@
         return via.remove(via.get(viaCtor.prototype._generateId(attrs)));
       });
       return via.add(viaCtor.cache().filter(function(other) {
-        if (!model.id) {
-          return;
-        }
-        return String(model.id) === String(other.get(mine));
+        return model.id && model.id == other.get(mine);
       }));
     };
     _.extend(Backbone.Model, {

@@ -55,7 +55,7 @@ _ = @_ or require 'underscore'
     model.on "change:#{mine}", onChangeMine
 
     ctor.cache().on 'add', (other) ->
-      model.set[name] other if other.id is model.get mine
+      model.set[name] other if `other.id == model.get(mine)`
 
   hasMany = (model, name, rel) ->
     ctor = getCtor rel.hasMany
@@ -67,14 +67,14 @@ _ = @_ or require 'underscore'
 
     ctor.cache().on "add change:#{theirs}", (other) ->
       return unless other?.id
-      models.add other if model.id is other.get theirs
+      models.add other if `model.id == other.get(theirs)`
 
     models.on "change:#{theirs}", (other) ->
       models.remove other
 
     models.add ctor.cache().filter (other) ->
       return unless other.id
-      model.id is other.get theirs
+      `model.id == other.get(theirs)`
 
   hasManyVia = (model, name, rel) ->
     ctor = getCtor rel.hasMany
@@ -92,7 +92,7 @@ _ = @_ or require 'underscore'
     attrs = {}
 
     viaCtor.cache().on 'add', (other) ->
-      via.add other if model.id and String(model.id) is String(other.get mine)
+      via.add other if model.id and `model.id == other.get(mine)`
 
     via
       .on('add', (other) ->
@@ -119,8 +119,7 @@ _ = @_ or require 'underscore'
         via.remove via.get viaCtor::_generateId attrs
 
     via.add viaCtor.cache().filter (other) ->
-      return unless model.id
-      String(model.id) is String(other.get mine)
+      model.id and `model.id == other.get(mine)`
 
   _.extend Backbone.Model,
 
