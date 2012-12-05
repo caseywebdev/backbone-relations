@@ -92,7 +92,7 @@ _ = @_ or require 'underscore'
     attrs = {}
 
     viaCtor.cache().on 'add', (other) ->
-      via.add other if model.id and model.id is other.get mine
+      via.add other if model.id and String(model.id) is String(other.get mine)
 
     via
       .on('add', (other) ->
@@ -120,7 +120,7 @@ _ = @_ or require 'underscore'
 
     via.add viaCtor.cache().filter (other) ->
       return unless model.id
-      model.id is other.get mine
+      String(model.id) is String(other.get mine)
 
   _.extend Backbone.Model,
 

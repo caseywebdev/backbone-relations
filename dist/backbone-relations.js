@@ -131,7 +131,7 @@
       (via.filters = {})[mine] = model;
       attrs = {};
       viaCtor.cache().on('add', function(other) {
-        if (model.id && model.id === other.get(mine)) {
+        if (model.id && String(model.id) === String(other.get(mine))) {
           return via.add(other);
         }
       });
@@ -173,7 +173,7 @@
         if (!model.id) {
           return;
         }
-        return model.id === other.get(mine);
+        return String(model.id) === String(other.get(mine));
       }));
     };
     _.extend(Backbone.Model, {
