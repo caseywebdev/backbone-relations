@@ -27,8 +27,8 @@ _ = @_ or require 'underscore'
     ctor = getCtor rel.hasOne
     mine = rel.myFk
 
-    onChangeId = ->
-      model.set mine, model.get[name].id
+    onChangeId = (other) ->
+      model.set mine, other.id
 
     onDestroy = ->
       delete model.get[name]
