@@ -47,7 +47,7 @@
       ctor = getCtor(rel.hasOne);
       mine = rel.myFk;
       onChangeId = function(other) {
-        return model.set(mine, other.id);
+        return model.set(mine, other != null ? other.id : void 0);
       };
       onDestroy = function() {
         delete model.get[name];

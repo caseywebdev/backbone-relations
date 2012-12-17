@@ -28,7 +28,7 @@ _ = @_ or require 'underscore'
     mine = rel.myFk
 
     onChangeId = (other) ->
-      model.set mine, other.id
+      model.set mine, other?.id
 
     onDestroy = ->
       delete model.get[name]
