@@ -136,8 +136,9 @@ _ = @_ or require 'underscore'
   initialize = Backbone.Model::initialize
 
   _.extend Backbone.Model::,
-    initialize: ->
+    initialize: (attrs, options) ->
       initialize.apply @, arguments
+      @cacheAll = options.cacheAll if options?.cacheAll?
       @constructor.cache().add @ if @cacheAll
       hook @
 

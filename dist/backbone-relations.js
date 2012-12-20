@@ -189,8 +189,11 @@
     });
     initialize = Backbone.Model.prototype.initialize;
     _.extend(Backbone.Model.prototype, {
-      initialize: function() {
+      initialize: function(attrs, options) {
         initialize.apply(this, arguments);
+        if ((options != null ? options.cacheAll : void 0) != null) {
+          this.cacheAll = options.cacheAll;
+        }
         if (this.cacheAll) {
           this.constructor.cache().add(this);
         }
