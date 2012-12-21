@@ -72,3 +72,11 @@ describe 'People', ->
   it 'should grab correct join models via...uh...`via`', ->
     mom.via('children', childA).id.should.equal '3-1'
     childA.via('parents', mom).id.should.equal '3-1'
+
+  it 'should not cache new people with `{cacheAll: false}`', ->
+    person = new Person null, cacheAll: false
+    Person.cache().include(person).should.be.false
+    person = new Person
+    Person.cache().include(person).should.be.true
+    person.destroy()
+    Person.cache().include(person).should.be.false
