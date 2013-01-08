@@ -2,7 +2,7 @@ Backbone = require 'backbone'
 
 module.exports =
 class Friendship extends Backbone.Model
-  cacheAll: true
+  cache: true
   idAttribute: ['frienderId', 'friendeeId']
   relations:
     friender:

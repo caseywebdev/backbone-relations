@@ -2,7 +2,7 @@ Backbone = require 'backbone'
 
 module.exports =
 class ChildParent extends Backbone.Model
-  cacheAll: true
+  cache: true
   idAttribute: ['childId', 'parentId']
   relations:
     child:

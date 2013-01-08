@@ -2,6 +2,8 @@ should = require('chai').should()
 Backbone = require 'backbone'
 require('../') Backbone
 require('backbone-composite-keys') Backbone
+ChildParent = require './models/child-parent'
+Friendship = require './models/friendship'
 Person = require './models/person'
 
 describe 'People', ->
@@ -20,13 +22,13 @@ describe 'People', ->
     id: 6
     name: 'Elvis'
 
-  mom.get.children.add childA
-  mom.get.children.add childB
-  dad.get.children.add childB
-  dad.get.children.add childC
+  (new ChildParent).set.child(childA).set.parent mom
+  (new ChildParent).set.child(childB).set.parent mom
+  (new ChildParent).set.child(childB).set.parent dad
+  (new ChildParent).set.child(childC).set.parent dad
 
-  childA.get.friends.add childB
-  childB.get.friends.add childC
+  (new Friendship).set.friender(childA).set.friendee childB
+  (new Friendship).set.friender(childB).set.friendee childC
 
   childA.set idolId: 6
   childB.set.idol rockstar
@@ -73,8 +75,8 @@ describe 'People', ->
     mom.via('children', childA).id.should.equal '3-1'
     childA.via('parents', mom).id.should.equal '3-1'
 
-  it 'should not cache new people with `{cacheAll: false}`', ->
-    person = new Person null, cacheAll: false
+  it 'should not cache new people with `{cache: false}`', ->
+    person = new Person null, cache: false
     Person.cache().include(person).should.be.false
     person = new Person
     Person.cache().include(person).should.be.true

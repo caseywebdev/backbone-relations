@@ -46,47 +46,48 @@
       var ctor, mine, onChangeId, onChangeMine, onDestroy;
       ctor = getCtor(rel.hasOne);
       mine = rel.myFk;
-      onChangeId = function(other) {
-        return model.set(mine, other != null ? other.id : void 0);
+      onChangeId = function(__, val) {
+        return model.set(mine, val);
       };
       onDestroy = function() {
-        delete model.get[name];
+        model.get[name] = void 0;
         if (rel.romeo) {
           return model.trigger('destroy', model, model.collection);
-        } else {
-          return model.set(mine, null);
         }
+        return model.set(mine, null);
       };
       model.set[name] = function(next) {
         var prev;
-        prev = model.get[name];
-        if (next === prev) {
-          return;
+        if (next === (prev = model.get[name])) {
+          return model;
         }
         if (prev) {
-          prev.off('change:id', onChangeId);
-          prev.off('destroy', onDestroy);
+          prev.off({
+            'change:id': onChangeId,
+            destroy: onDestroy
+          });
         }
-        model.get[name] = next;
-        model.set(mine, next != null ? next.id : void 0);
+        model.set(mine, next != null ? next.id : void 0).get[name] = next;
         if (next) {
-          next.on('change:id', onChangeId);
-          return next.on('destroy', onDestroy);
+          next.on({
+            'change:id': onChangeId,
+            destroy: onDestroy
+          });
         }
+        return model;
       };
       (onChangeMine = function() {
         return model.set[name](ctor.cache().get(model.get(mine)));
       })();
-      model.on("change:" + mine, onChangeMine);
-      return ctor.cache().on('add', function(other) {
+      ctor.cache().on('add', function(other) {
         if (other.id == model.get(mine)) {
           return model.set[name](other);
         }
       });
+      return model.on("change:" + mine, onChangeMine);
     };
     hasMany = function(model, name, rel) {
-      var ctor, models, theirs,
-        _this = this;
+      var ctor, models, theirs;
       ctor = getCtor(rel.hasMany);
       theirs = rel.theirFk;
       models = model.get[name] = new ctor.Collection;
@@ -95,22 +96,20 @@
       };
       (models.filters = {})[theirs] = model;
       ctor.cache().on("add change:" + theirs, function(other) {
-        if (!(other != null ? other.id : void 0)) {
-          return;
-        }
-        if (model.id == other.get(theirs)) {
+        if (model.id && model.id == other.get(theirs)) {
           return models.add(other);
         }
       });
-      models.on("change:" + theirs, function(other) {
-        return models.remove(other);
-      });
-      return models.add(ctor.cache().filter(function(other) {
-        if (!other.id) {
-          return;
+      models.on("change:" + theirs, function(other, val) {
+        if (!model.id == val) {
+          return models.remove(other);
         }
-        return model.id == other.get(theirs);
-      }));
+      });
+      if (model.id) {
+        return models.add(ctor.cache().filter(function(other) {
+          return model.id == other.get(theirs);
+        }));
+      }
     };
     hasManyVia = function(model, name, rel) {
       var attrs, ctor, mine, models, theirs, via, viaCtor,
@@ -130,48 +129,35 @@
       };
       (via.filters = {})[mine] = model;
       attrs = {};
-      viaCtor.cache().on('add', function(other) {
+      viaCtor.cache().on("add change:" + mine + " change:" + theirs, function(other) {
         if (model.id && model.id == other.get(mine)) {
           return via.add(other);
         }
+        return via.remove(other);
       });
-      via.on('add', function(other) {
-        if (!other.get(theirs)) {
-          return;
+      via.on({
+        add: function(other) {
+          if (other = ctor.cache().get(other.get(theirs))) {
+            return models.add(other);
+          }
+        },
+        remove: function(other) {
+          return models.remove(models.get(other.get(theirs)));
         }
-        return models.add(ctor["new"]({
-          id: other.get(theirs)
-        }));
-      }).on('remove', function(other) {
-        return models.remove(models.get(other.get(theirs)));
       });
       ctor.cache().on('add', function(other) {
-        if (!(attrs[mine] = model.id)) {
-          return;
-        }
-        if (!(attrs[theirs] = other.id)) {
+        if (!((attrs[mine] = model.id) && (attrs[theirs] = other.id))) {
           return;
         }
         if (via.get(viaCtor.prototype._generateId(attrs))) {
           return models.add(other);
         }
       });
-      models.on('add', function(other) {
-        if (!(attrs[mine] = model.id)) {
-          return;
-        }
-        if (!(attrs[theirs] = other.id)) {
-          return;
-        }
-        return via.add(viaCtor["new"](attrs));
-      }).on('remove', function(other) {
-        attrs[mine] = model.id;
-        attrs[theirs] = other.id;
-        return via.remove(via.get(viaCtor.prototype._generateId(attrs)));
-      });
-      return via.add(viaCtor.cache().filter(function(other) {
-        return model.id && model.id == other.get(mine);
-      }));
+      if (model.id) {
+        return via.add(viaCtor.cache().filter(function(other) {
+          return model.id == other.get(mine);
+        }));
+      }
     };
     _.extend(Backbone.Model, {
       cache: function() {
@@ -191,10 +177,10 @@
     _.extend(Backbone.Model.prototype, {
       initialize: function(attrs, options) {
         initialize.apply(this, arguments);
-        if ((options != null ? options.cacheAll : void 0) != null) {
-          this.cacheAll = options.cacheAll;
+        if ((options != null ? options.cache : void 0) != null) {
+          this.cache = options.cache;
         }
-        if (this.cacheAll) {
+        if (this.cache) {
           this.constructor.cache().add(this);
         }
         return hook(this);

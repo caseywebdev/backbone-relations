@@ -2,16 +2,16 @@ Backbone = require 'backbone'
 
 module.exports =
 class Person extends Backbone.Model
-  cacheAll: true
+  cache: true
   relations:
     parents:
       hasMany: -> Person
-      via: -> require './childParent'
+      via: -> require './child-parent'
       myViaFk: 'childId'
       theirViaFk: 'parentId'
     children:
       hasMany: -> Person
-      via: -> require './childParent'
+      via: -> require './child-parent'
       myViaFk: 'parentId'
       theirViaFk: 'childId'
     friends:

@@ -27,54 +27,46 @@ _ = @_ or require 'underscore'
     ctor = getCtor rel.hasOne
     mine = rel.myFk
 
-    onChangeId = (other) ->
-      model.set mine, other?.id
+    onChangeId = (__, val) ->
+      model.set mine, val
 
     onDestroy = ->
-      delete model.get[name]
-      if rel.romeo
-        model.trigger 'destroy', model, model.collection
-      else
-        model.set mine, null
+      model.get[name] = undefined
+      return model.trigger 'destroy', model, model.collection if rel.romeo
+      model.set mine, null
 
     model.set[name] = (next) ->
-      prev = model.get[name]
-      return if next is prev
-      if prev
-        prev.off 'change:id', onChangeId
-        prev.off 'destroy', onDestroy
-      model.get[name] = next
-      model.set mine, next?.id
-      if next
-        next.on 'change:id', onChangeId
-        next.on 'destroy', onDestroy
+      return model if next is (prev = model.get[name])
+      prev.off 'change:id': onChangeId, destroy: onDestroy if prev
+      model.set(mine, next?.id).get[name] = next
+      next.on 'change:id': onChangeId, destroy: onDestroy if next
+      model
 
     do onChangeMine = ->
       model.set[name] ctor.cache().get model.get mine
 
-    model.on "change:#{mine}", onChangeMine
-
     ctor.cache().on 'add', (other) ->
       model.set[name] other if `other.id == model.get(mine)`
+
+    model.on "change:#{mine}", onChangeMine
 
   hasMany = (model, name, rel) ->
     ctor = getCtor rel.hasMany
     theirs = rel.theirFk
     models = model.get[name] = new ctor.Collection
-    models.url = =>
+    models.url = ->
       "#{_.result model, 'url'}#{_.result(rel, 'url') or "/#{name}"}"
     (models.filters = {})[theirs] = model
 
     ctor.cache().on "add change:#{theirs}", (other) ->
-      return unless other?.id
-      models.add other if `model.id == other.get(theirs)`
+      models.add other if model.id and `model.id == other.get(theirs)`
 
-    models.on "change:#{theirs}", (other) ->
-      models.remove other
+    models.on "change:#{theirs}", (other, val) ->
+      models.remove other unless `model.id == val`
 
-    models.add ctor.cache().filter (other) ->
-      return unless other.id
-      `model.id == other.get(theirs)`
+    if model.id
+      models.add ctor.cache().filter (other) ->
+        `model.id == other.get(theirs)`
 
   hasManyVia = (model, name, rel) ->
     ctor = getCtor rel.hasMany
@@ -82,7 +74,7 @@ _ = @_ or require 'underscore'
     mine = rel.myViaFk
     theirs = rel.theirViaFk
     models = model.get[name] = new ctor.Collection
-    models.url = =>
+    models.url = ->
       "#{_.result model, 'url'}#{_.result(rel, 'url') or "/#{name}"}"
     models.mine = theirs
     via = models.via = new viaCtor.Collection
@@ -91,35 +83,23 @@ _ = @_ or require 'underscore'
     (via.filters = {})[mine] = model
     attrs = {}
 
-    viaCtor.cache().on 'add', (other) ->
-      via.add other if model.id and `model.id == other.get(mine)`
+    viaCtor.cache().on "add change:#{mine} change:#{theirs}", (other) ->
+      return via.add other if model.id and `model.id == other.get(mine)`
+      via.remove other
 
-    via
-      .on('add', (other) ->
-        return unless other.get theirs
-        models.add ctor.new id: other.get theirs
-      )
-      .on 'remove', (other) ->
+    via.on
+      add: (other) ->
+        models.add other if other = ctor.cache().get other.get theirs
+      remove: (other) ->
         models.remove models.get other.get theirs
 
     ctor.cache().on 'add', (other) ->
-      return unless attrs[mine] = model.id
-      return unless attrs[theirs] = other.id
+      return unless (attrs[mine] = model.id) and (attrs[theirs] = other.id)
       models.add other if via.get viaCtor::_generateId attrs
 
-    models
-      .on('add', (other) ->
-        return unless attrs[mine] = model.id
-        return unless attrs[theirs] = other.id
-        via.add viaCtor.new attrs
-      )
-      .on 'remove', (other) ->
-        attrs[mine] = model.id
-        attrs[theirs] = other.id
-        via.remove via.get viaCtor::_generateId attrs
-
-    via.add viaCtor.cache().filter (other) ->
-      model.id and `model.id == other.get(mine)`
+    if model.id
+      via.add viaCtor.cache().filter (other) ->
+        `model.id == other.get(mine)`
 
   _.extend Backbone.Model,
 
@@ -138,8 +118,8 @@ _ = @_ or require 'underscore'
   _.extend Backbone.Model::,
     initialize: (attrs, options) ->
       initialize.apply @, arguments
-      @cacheAll = options.cacheAll if options?.cacheAll?
-      @constructor.cache().add @ if @cacheAll
+      @cache = options.cache if options?.cache?
+      @constructor.cache().add @ if @cache
       hook @
 
     via: (rel, id) ->
