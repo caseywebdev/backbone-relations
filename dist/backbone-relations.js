@@ -95,15 +95,18 @@
         return "" + (_.result(model, 'url')) + (_.result(rel, 'url') || ("/" + name));
       };
       (models.filters = {})[theirs] = model;
-      model.listenTo(ctor.cache(), "add change:" + theirs, function(other) {
+      models.listenTo(ctor.cache(), 'add', function(other) {
         if (model.id && model.id == other.get(theirs)) {
-          return models.add(other);
+          return this.add(other);
         }
       });
-      model.listenTo(models, "change:" + theirs, function(other, val) {
-        if (!model.id == val) {
-          return models.remove(other);
+      models.listenTo(ctor.cache(), "change:" + theirs, function(other, val) {
+        if (model.id == val) {
+          return this.add(other);
         }
+      });
+      models.on("change:" + theirs, function(other, val) {
+        return this.remove(other);
       });
       if (model.id) {
         return models.add(ctor.cache().filter(function(other) {
@@ -112,7 +115,7 @@
       }
     };
     hasManyVia = function(model, name, rel) {
-      var attrs, ctor, mine, models, other, otherModel, theirs, via, viaCtor, _i, _len, _ref, _results,
+      var attrs, ctor, mine, models, theirs, via, viaCtor,
         _this = this;
       ctor = getCtor(rel.hasMany);
       viaCtor = getCtor(rel.via);
@@ -129,42 +132,21 @@
       };
       (via.filters = {})[mine] = model;
       attrs = {};
-      model.listenTo(viaCtor.cache(), 'add', function(other) {
-        var otherModel;
-        if (!(model.id && model.id == other.get(mine) && (otherModel = ctor.cache().get(other.get(theirs))))) {
-          return;
+      via.listenTo(viaCtor.cache(), 'add', function(other) {
+        if (model.id && model.id == other.get(mine)) {
+          return this.add(other);
         }
-        via.add(other);
-        return models.add(otherModel);
       });
-      model.listenTo(ctor.cache(), 'add', function(other) {
-        var otherVia;
-        if (!((attrs[mine] = model.id) && (attrs[theirs] = other.id) && (otherVia = via.get(viaCtor.prototype._generateId(attrs))))) {
-          return;
-        }
-        via.add(otherVia);
-        return models.add(other);
+      models.listenTo(via, 'add', function(other) {
+        return this.add(ctor.cache().get(other.get(theirs)));
       });
-      model.listenTo(via, 'remove', function(other) {
-        return models.remove(models.get(other.get(theirs)));
-      });
-      model.listenTo(models, 'remove', function(other) {
-        attrs[mine] = model.id;
-        attrs[theirs] = other.id;
-        return via.remove(via.get(viaCtor.prototype._generateId(attrs)));
+      models.listenTo(via, 'remove', function(other, val) {
+        return this.remove(ctor.cache().get(other.get(theirs)));
       });
       if (model.id) {
-        _ref = viaCtor.cache().models;
-        _results = [];
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          other = _ref[_i];
-          if (!(model.id == other.get(mine) && (otherModel = ctor.cache().get(other.get(theirs))))) {
-            continue;
-          }
-          via.add(other);
-          _results.push(models.add(otherModel));
-        }
-        return _results;
+        return via.add(viaCtor.cache().filter(function(other) {
+          return model.id == other.get(mine);
+        }));
       }
     };
     _.extend(Backbone.Model, {
