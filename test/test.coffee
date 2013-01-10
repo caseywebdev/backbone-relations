@@ -22,13 +22,13 @@ describe 'People', ->
     id: 6
     name: 'Elvis'
 
-  (new ChildParent).set.child(childA).set.parent mom
-  (new ChildParent).set.child(childB).set.parent mom
-  (new ChildParent).set.child(childB).set.parent dad
-  (new ChildParent).set.child(childC).set.parent dad
+  new ChildParent childId: childA.id, parentId: mom.id
+  new ChildParent childId: childB.id, parentId: mom.id
+  new ChildParent childId: childB.id, parentId: dad.id
+  new ChildParent childId: childC.id, parentId: dad.id
 
-  (new Friendship).set.friender(childA).set.friendee childB
-  (new Friendship).set.friender(childB).set.friendee childC
+  new Friendship frienderId: childA.id, friendeeId: childB.id
+  new Friendship frienderId: childB.id, friendeeId: childC.id
 
   childA.set idolId: 6
   childB.set.idol rockstar

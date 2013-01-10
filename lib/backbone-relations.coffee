@@ -37,9 +37,9 @@ _ = @_ or require 'underscore'
 
     model.set[name] = (next) ->
       return model if next is (prev = model.get[name])
-      prev.off 'change:id': onChangeId, destroy: onDestroy if prev
+      model.stopListening prev, 'change:id': onChangeId, destroy: onDestroy if prev
       model.set(mine, next?.id).get[name] = next
-      next.on 'change:id': onChangeId, destroy: onDestroy if next
+      model.listenTo next, 'change:id': onChangeId, destroy: onDestroy if next
       model
 
     do onChangeMine = ->
@@ -58,10 +58,10 @@ _ = @_ or require 'underscore'
       "#{_.result model, 'url'}#{_.result(rel, 'url') or "/#{name}"}"
     (models.filters = {})[theirs] = model
 
-    ctor.cache().on "add change:#{theirs}", (other) ->
+    model.listenTo ctor.cache(), "add change:#{theirs}", (other) ->
       models.add other if model.id and `model.id == other.get(theirs)`
 
-    models.on "change:#{theirs}", (other, val) ->
+    model.listenTo models, "change:#{theirs}", (other, val) ->
       models.remove other unless `model.id == val`
 
     if model.id
@@ -83,23 +83,32 @@ _ = @_ or require 'underscore'
     (via.filters = {})[mine] = model
     attrs = {}
 
-    viaCtor.cache().on "add change:#{mine} change:#{theirs}", (other) ->
-      return via.add other if model.id and `model.id == other.get(mine)`
-      via.remove other
+    model.listenTo viaCtor.cache(), 'add', (other) ->
+      return unless model.id and `model.id == other.get(mine)` and
+        otherModel = ctor.cache().get other.get theirs
+      via.add other
+      models.add otherModel
 
-    via.on
-      add: (other) ->
-        models.add other if other = ctor.cache().get other.get theirs
-      remove: (other) ->
-        models.remove models.get other.get theirs
+    model.listenTo ctor.cache(), 'add', (other) ->
+      return unless (attrs[mine] = model.id) and (attrs[theirs] = other.id) and
+        otherVia = via.get viaCtor::_generateId attrs
+      via.add otherVia
+      models.add other
 
-    ctor.cache().on 'add', (other) ->
-      return unless (attrs[mine] = model.id) and (attrs[theirs] = other.id)
-      models.add other if via.get viaCtor::_generateId attrs
+    model.listenTo via, 'remove', (other) ->
+      models.remove models.get other.get theirs
+
+    model.listenTo models, 'remove', (other) ->
+      attrs[mine] = model.id
+      attrs[theirs] = other.id
+      via.remove via.get viaCtor::_generateId attrs
 
     if model.id
-      via.add viaCtor.cache().filter (other) ->
-        `model.id == other.get(mine)`
+      for other in viaCtor.cache().models
+        continue unless `model.id == other.get(mine)` and
+          otherModel = ctor.cache().get other.get theirs
+        via.add other
+        models.add otherModel
 
   _.extend Backbone.Model,
 
