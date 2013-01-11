@@ -43,19 +43,9 @@
       return _results;
     };
     hasOne = function(model, name, rel) {
-      var ctor, mine, onChangeId, onChangeMine, onDestroy;
+      var changeId, ctor, destroy, mine;
       ctor = getCtor(rel.hasOne);
       mine = rel.myFk;
-      onChangeId = function(__, val) {
-        return model.set(mine, val);
-      };
-      onDestroy = function() {
-        model.get[name] = void 0;
-        if (rel.romeo) {
-          return model.trigger('destroy', model, model.collection);
-        }
-        return model.set(mine, null);
-      };
       model.set[name] = function(next) {
         var prev;
         if (next === (prev = model.get[name])) {
@@ -63,28 +53,37 @@
         }
         if (prev) {
           model.stopListening(prev, {
-            'change:id': onChangeId,
-            destroy: onDestroy
+            'change:id': changeId,
+            destroy: destroy
           });
         }
         model.set(mine, next != null ? next.id : void 0).get[name] = next;
         if (next) {
           model.listenTo(next, {
-            'change:id': onChangeId,
-            destroy: onDestroy
+            'change:id': changeId,
+            destroy: destroy
           });
         }
         return model;
       };
-      (onChangeMine = function() {
-        return model.set[name](ctor.cache().get(model.get(mine)));
-      })();
-      ctor.cache().on('add', function(other) {
-        if (other.id == model.get(mine)) {
-          return model.set[name](other);
+      model.listenTo(ctor.cache(), 'add', function(other) {
+        if (other.id && other.id == model.get(mine)) {
+          return this.set[name](other);
         }
       });
-      return model.on("change:" + mine, onChangeMine);
+      model.on("change:" + mine, function(__, val) {
+        return this.set[name](ctor.cache().get(val));
+      });
+      changeId = function(__, val) {
+        return model.set(mine, val);
+      };
+      destroy = function() {
+        model.set[name](null);
+        if (rel.romeo) {
+          return model.trigger('destroy', model, model.collection);
+        }
+      };
+      return model.set[name](ctor.cache().get(model.get(mine)));
     };
     hasMany = function(model, name, rel) {
       var ctor, models, theirs;
@@ -115,7 +114,7 @@
       }
     };
     hasManyVia = function(model, name, rel) {
-      var attrs, ctor, mine, models, theirs, via, viaCtor,
+      var ctor, mine, models, theirs, via, viaCtor,
         _this = this;
       ctor = getCtor(rel.hasMany);
       viaCtor = getCtor(rel.via);
@@ -131,16 +130,23 @@
         return "" + (_.result(model, 'url')) + (_.result(viaCtor.Collection.prototype, 'url'));
       };
       (via.filters = {})[mine] = model;
-      attrs = {};
       via.listenTo(viaCtor.cache(), 'add', function(other) {
         if (model.id && model.id == other.get(mine)) {
           return this.add(other);
         }
       });
+      via.listenTo(viaCtor.cache(), "change:" + mine, function(other, val) {
+        if (model.id == val) {
+          return this.add(other);
+        }
+      });
+      via.on("change:" + mine, function(other, val) {
+        return this.remove(other);
+      });
       models.listenTo(via, 'add', function(other) {
         return this.add(ctor.cache().get(other.get(theirs)));
       });
-      models.listenTo(via, 'remove', function(other, val) {
+      models.listenTo(via, 'remove', function(other) {
         return this.remove(ctor.cache().get(other.get(theirs)));
       });
       if (model.id) {

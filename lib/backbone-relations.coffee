@@ -27,28 +27,27 @@ _ = @_ or require 'underscore'
     ctor = getCtor rel.hasOne
     mine = rel.myFk
 
-    onChangeId = (__, val) ->
-      model.set mine, val
-
-    onDestroy = ->
-      model.get[name] = undefined
-      return model.trigger 'destroy', model, model.collection if rel.romeo
-      model.set mine, null
-
     model.set[name] = (next) ->
       return model if next is (prev = model.get[name])
-      model.stopListening prev, 'change:id': onChangeId, destroy: onDestroy if prev
+      model.stopListening prev, {'change:id': changeId, destroy} if prev
       model.set(mine, next?.id).get[name] = next
-      model.listenTo next, 'change:id': onChangeId, destroy: onDestroy if next
+      model.listenTo next, {'change:id': changeId, destroy} if next
       model
 
-    do onChangeMine = ->
-      model.set[name] ctor.cache().get model.get mine
+    model.listenTo ctor.cache(), 'add', (other) ->
+      this.set[name] other if other.id and `other.id == model.get(mine)`
 
-    ctor.cache().on 'add', (other) ->
-      model.set[name] other if `other.id == model.get(mine)`
+    model.on "change:#{mine}", (__, val) ->
+      this.set[name] ctor.cache().get val
 
-    model.on "change:#{mine}", onChangeMine
+    changeId = (__, val) ->
+      model.set mine, val
+
+    destroy = ->
+      model.set[name] null
+      model.trigger 'destroy', model, model.collection if rel.romeo
+
+    model.set[name] ctor.cache().get model.get mine
 
   hasMany = (model, name, rel) ->
     ctor = getCtor rel.hasMany
@@ -84,15 +83,20 @@ _ = @_ or require 'underscore'
     via.url = =>
       "#{_.result model, 'url'}#{_.result viaCtor.Collection::, 'url'}"
     (via.filters = {})[mine] = model
-    attrs = {}
 
     via.listenTo viaCtor.cache(), 'add', (other) ->
       this.add other if model.id and `model.id == other.get(mine)`
 
+    via.listenTo viaCtor.cache(), "change:#{mine}", (other, val) ->
+      this.add other if `model.id == val`
+
+    via.on "change:#{mine}", (other, val) ->
+      this.remove other
+
     models.listenTo via, 'add', (other) ->
       this.add ctor.cache().get other.get theirs
 
-    models.listenTo via, 'remove', (other, val) ->
+    models.listenTo via, 'remove', (other) ->
       this.remove ctor.cache().get other.get theirs
 
     if model.id
