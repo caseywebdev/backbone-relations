@@ -94,7 +94,7 @@ _ = @_ or require 'underscore'
       this.remove other
 
     models.listenTo via, 'add', (other) ->
-      this.add ctor.cache().get other.get theirs
+      this.add other if other = ctor.cache().get other.get theirs
 
     models.listenTo via, 'remove', (other) ->
       this.remove ctor.cache().get other.get theirs

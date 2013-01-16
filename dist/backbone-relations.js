@@ -144,7 +144,9 @@
         return this.remove(other);
       });
       models.listenTo(via, 'add', function(other) {
-        return this.add(ctor.cache().get(other.get(theirs)));
+        if (other = ctor.cache().get(other.get(theirs))) {
+          return this.add(other);
+        }
       });
       models.listenTo(via, 'remove', function(other) {
         return this.remove(ctor.cache().get(other.get(theirs)));
