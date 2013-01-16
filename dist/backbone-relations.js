@@ -94,17 +94,12 @@
         return "" + (_.result(model, 'url')) + (_.result(rel, 'url') || ("/" + name));
       };
       (models.filters = {})[theirs] = model;
-      models.listenTo(ctor.cache(), 'add', function(other) {
+      models.listenTo(ctor.cache(), "add change:" + theirs, function(other) {
         if (model.id && model.id == other.get(theirs)) {
           return this.add(other);
         }
       });
-      models.listenTo(ctor.cache(), "change:" + theirs, function(other, val) {
-        if (model.id == val) {
-          return this.add(other);
-        }
-      });
-      models.on("change:" + theirs, function(other, val) {
+      models.on("change:" + theirs, function(other) {
         return this.remove(other);
       });
       if (model.id) {
@@ -130,13 +125,8 @@
         return "" + (_.result(model, 'url')) + (_.result(viaCtor.Collection.prototype, 'url'));
       };
       (via.filters = {})[mine] = model;
-      via.listenTo(viaCtor.cache(), 'add', function(other) {
+      via.listenTo(viaCtor.cache(), "add change:" + mine, function(other) {
         if (model.id && model.id == other.get(mine)) {
-          return this.add(other);
-        }
-      });
-      via.listenTo(viaCtor.cache(), "change:" + mine, function(other, val) {
-        if (model.id == val) {
           return this.add(other);
         }
       });

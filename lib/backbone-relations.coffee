@@ -57,13 +57,10 @@ _ = @_ or require 'underscore'
       "#{_.result model, 'url'}#{_.result(rel, 'url') or "/#{name}"}"
     (models.filters = {})[theirs] = model
 
-    models.listenTo ctor.cache(), 'add', (other) ->
+    models.listenTo ctor.cache(), "add change:#{theirs}", (other) ->
       this.add other if model.id and `model.id == other.get(theirs)`
 
-    models.listenTo ctor.cache(), "change:#{theirs}", (other, val) ->
-      this.add other if `model.id == val`
-
-    models.on "change:#{theirs}", (other, val) ->
+    models.on "change:#{theirs}", (other) ->
       this.remove other
 
     if model.id
@@ -84,11 +81,8 @@ _ = @_ or require 'underscore'
       "#{_.result model, 'url'}#{_.result viaCtor.Collection::, 'url'}"
     (via.filters = {})[mine] = model
 
-    via.listenTo viaCtor.cache(), 'add', (other) ->
+    via.listenTo viaCtor.cache(), "add change:#{mine}", (other) ->
       this.add other if model.id and `model.id == other.get(mine)`
-
-    via.listenTo viaCtor.cache(), "change:#{mine}", (other, val) ->
-      this.add other if `model.id == val`
 
     via.on "change:#{mine}", (other, val) ->
       this.remove other
