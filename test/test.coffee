@@ -1,7 +1,7 @@
 should = require('chai').should()
 Backbone = require 'backbone'
-require('../') Backbone
-require('backbone-composite-keys') Backbone
+require '../'
+require 'backbone-composite-keys'
 ChildParent = require './models/child-parent'
 Friendship = require './models/friendship'
 Person = require './models/person'
