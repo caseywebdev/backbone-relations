@@ -1,9 +1,8 @@
 {
   "name": "backbone-relations",
-  "version": "0.0.14",
-  "author": "Casey Foster <casey@caseywebdev.com>",
+  "version": "0.1.0",
+  "author": "Casey Foster <c@sey.me>",
   "licence": "MIT",
-  "main": "dist/backbone-relations",
   "repository": {
     "type": "git",
     "url": "https://github.com/caseywebdev/backbone-relations"
@@ -12,18 +11,15 @@
     "underscore": "x"
   },
   "devDependencies": {
-    "coffee-script": "x",
     "mocha": "x",
     "chai": "x",
-    "backbone": "git://github.com/documentcloud/backbone",
-    "backbone-composite-keys": "x"
+    "backbone": "git://github.com/documentcloud/backbone"
   },
   "engines": {
     "node": "x",
     "npm": "x"
   },
   "scripts": {
-    "test": "node_modules/.bin/mocha",
-    "dev": "node_modules/.bin/coffee -cw -o dist lib"
+    "test": "node_modules/.bin/mocha"
   }
 }
