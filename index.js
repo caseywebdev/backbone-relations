@@ -27,20 +27,22 @@
           instance.set(instance.idAttribute, this.get(rel.fk));
         } else {
           instance = rel.instance = new rel.hasMany();
+          instance.owner = this;
+          instance.fk = rel.fk;
           var self = this;
           instance.url = function () {
-            return self.url() + (rel.urlRoot || '/' + attr);
+            return _.result(self, 'url') + (rel.urlRoot || '/' + attr);
           };
           if (rel.via) {
-            var viaRel = this.relations[rel.via];
-            instance.via = viaRel.hasMany.prototype.model.prototype;
-            instance.localFk = rel.fk;
-            instance.remote = this;
-            instance.remoteFk = viaRel.fk;
+            instance.via = this.get(rel.via);
+            instance
+              .add(instance.via.pluck(rel.get))
+              .listenTo(instance.via, 'add', function (model) {
+                this.add(model.get(rel.get));
+              });
           } else {
-            (instance.where = {})[rel.fk] = this.id;
-            instance.on('add', function (model) {
-              if (model.get(rel.fk) !== self.id) model.set(rel.fk, self.id);
+            this.listenTo(instance, 'add', function (model) {
+              if (model.get(rel.fk) !== this.id) model.set(rel.fk, this.id);
             });
           }
         }
@@ -63,17 +65,13 @@
         val = attrs[key];
         delete attrs[key];
         if (rel.hasOne) {
-          var instance =
-            val instanceof rel.hasOne ?
-            rel.instance = val :
-            this.get(key).set(val, options);
+          var instance = this.get(key);
+          var model = val instanceof rel.hasOne ? val.attributes : val;
+          instance.set(model, options);
           if (this.get(rel.fk) !== instance.id) attrs[rel.fk] = instance.id;
         } else {
-          if (val instanceof rel.hasMany) {
-            rel.instance = val;
-          } else {
-            this.get(key).update(val, options);
-          }
+          var models = val instanceof rel.hasMany ? val.models : val;
+          this.get(key).update(models, options);
         }
       }
       return set.call(this, attrs, options);

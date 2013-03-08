@@ -36,7 +36,7 @@ describe('People', function () {
 
   it('should set idol', function () {
     mom.get('idol').id.should.equal(6);
-    childA.get('idol').should.equal(rockstar);
+    childA.get('idol').id.should.equal(rockstar.id);
   });
 
   it('should set fans', function () {
