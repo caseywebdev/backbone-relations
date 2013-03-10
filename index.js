@@ -35,11 +35,6 @@
           };
           if (rel.via) {
             instance.via = this.get(rel.via);
-            instance
-              .add(instance.via.pluck(rel.get))
-              .listenTo(instance.via, 'add', function (model) {
-                this.add(model.get(rel.get));
-              });
           } else {
             this.listenTo(instance, 'add', function (model) {
               if (model.get(rel.fk) !== this.id) model.set(rel.fk, this.id);
