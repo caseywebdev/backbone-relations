@@ -7,14 +7,14 @@
   var Backbone = node ? require('backbone') : window.Backbone;
 
   var proto = Backbone.Model.prototype;
-  var initialize = proto.initialize;
+  var constructor = proto.constructor;
   var get = proto.get;
   var set = proto.set;
 
-  _.extend(proto, {
-    initialize: function (attrs, options) {
+  Backbone.Model = Backbone.Model.extend({
+    constructor: function (attrs, options) {
       if (this.relations) this.relations = this.relations();
-      return initialize.call(this, attrs, options);
+      return constructor.call(this, attrs, options);
     },
 
     get: function (attr) {
@@ -77,4 +77,6 @@
       return set.call(this, attrs, options);
     }
   });
+
+  _.extend(Backbone.Collection.prototype, {model: Backbone.Model});
 })();
