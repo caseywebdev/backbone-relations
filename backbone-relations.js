@@ -18,7 +18,7 @@
     },
 
     get: function (attr) {
-      var rel = this.relations[attr];
+      var rel = this.relations && this.relations[attr];
       if (!rel) return get.call(this, attr);
       var instance = rel.instance;
       if (!instance || (rel.hasOne && instance.id !== this.get(rel.fk))) {
@@ -54,19 +54,21 @@
       } else {
         (attrs = {})[key] = val;
       }
-      for (key in attrs) {
-        var rel = this.relations[key];
-        if (!rel) continue;
-        val = attrs[key];
-        delete attrs[key];
-        if (rel.hasOne) {
-          var instance = this.get(key);
-          var model = val instanceof rel.hasOne ? val.attributes : val;
-          instance.set(model, options);
-          if (this.get(rel.fk) !== instance.id) attrs[rel.fk] = instance.id;
-        } else {
-          var models = val instanceof rel.hasMany ? val.models : val;
-          this.get(key).update(models, options);
+      if (this.relations) {
+        for (key in attrs) {
+          var rel = this.relations[key];
+          if (!rel) continue;
+          val = attrs[key];
+          delete attrs[key];
+          if (rel.hasOne) {
+            var instance = this.get(key);
+            var model = val instanceof rel.hasOne ? val.attributes : val;
+            instance.set(model, options);
+            if (this.get(rel.fk) !== instance.id) attrs[rel.fk] = instance.id;
+          } else {
+            var models = val instanceof rel.hasMany ? val.models : val;
+            this.get(key).update(models, options);
+          }
         }
       }
       return set.call(this, attrs, options);
