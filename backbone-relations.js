@@ -11,26 +11,41 @@
   var get = proto.get;
   var set = proto.set;
 
+  var setHasOne = function (model, rel, instance, options) {
+    if (rel.instance) rel.instance.off(null, rel.listener);
+    rel.instance = instance;
+    var idAttr = instance.idAttribute;
+    var fk = rel.fk;
+    if (instance.id) {
+      model.set(fk, instance.id, options);
+    } else {
+      instance.set(idAttr, model.get(fk), options);
+    }
+    instance.on('change:' + idAttr, rel.listener = function (__, val, options) {
+      model.set(fk, val, options);
+    });
+  };
+
   Backbone.Model = Backbone.Model.extend({
     constructor: function (attrs, options) {
       if (this.relations) this.relations = this.relations();
       return constructor.call(this, attrs, options);
     },
 
-    get: function (attr) {
-      var rel = this.relations && this.relations[attr];
-      if (!rel) return get.call(this, attr);
+    get: function (key) {
+      var rel = this.relations && this.relations[key];
+      if (!rel) return get.call(this, key);
       var instance = rel.instance;
       if (!instance || (rel.hasOne && instance.id !== this.get(rel.fk))) {
         if (rel.hasOne) {
-          this._setOne(rel, instance = new rel.hasOne());
+          setHasOne(this, rel, instance = new rel.hasOne());
         } else {
           instance = rel.instance = new rel.hasMany();
           instance.owner = this;
           instance.fk = rel.fk;
           var self = this;
           instance.url = function () {
-            return _.result(self, 'url') + (rel.urlRoot || '/' + attr);
+            return _.result(self, 'url') + (rel.urlRoot || '/' + key);
           };
           if (rel.via) {
             instance.via = this.get(rel.via);
@@ -65,32 +80,17 @@
           delete attrs[key];
           if (rel.hasOne) {
             if (val instanceof rel.hasOne) {
-              this._setOne(rel, val, options);
+              setHasOne(this, rel, val, options);
             } else {
               this.get(key).set(val, options);
             }
           } else {
             var models = val instanceof rel.hasMany ? val.models : val;
-            this.get(key).update(models, options);
+            this.get(key).set(models, options);
           }
         }
       }
       return set.call(this, attrs, options);
-    },
-
-    _setOne: function (rel, instance, options) {
-      if (rel.listener) this.stopListening(null, null, rel.listener);
-      rel.instance = instance;
-      var idAttr = instance.idAttribute;
-      if (instance.id) {
-        this.set(rel.fk, instance.id, options);
-      } else {
-        instance.set(idAttr, this.get(rel.fk), options);
-      }
-      rel.listener = function (__, val, options) {
-        this.set(rel.fk, val, options);
-      };
-      this.listenTo(instance, 'change:' + idAttr, rel.listener);
     }
   });
 
