@@ -23,8 +23,7 @@
       var instance = rel.instance;
       if (!instance || (rel.hasOne && instance.id !== this.get(rel.fk))) {
         if (rel.hasOne) {
-          instance = rel.instance = new rel.hasOne();
-          instance.set(instance.idAttribute, this.get(rel.fk));
+          this._setOne(rel, instance = new rel.hasOne());
         } else {
           instance = rel.instance = new rel.hasMany();
           instance.owner = this;
@@ -36,8 +35,12 @@
           if (rel.via) {
             instance.via = this.get(rel.via);
           } else {
+            instance.each(function (model) { model.set(rel.fk, self.id); });
             this.listenTo(instance, 'add', function (model) {
-              if (model.get(rel.fk) !== this.id) model.set(rel.fk, this.id);
+              model.set(rel.fk, this.id);
+            });
+            this.on('change:' + this.idAttribute, function (__, val) {
+              instance.each(function (model) { model.set(rel.fk, val); });
             });
           }
         }
@@ -61,10 +64,11 @@
           val = attrs[key];
           delete attrs[key];
           if (rel.hasOne) {
-            var instance = this.get(key);
-            var model = val instanceof rel.hasOne ? val.attributes : val;
-            instance.set(model, options);
-            if (this.get(rel.fk) !== instance.id) attrs[rel.fk] = instance.id;
+            if (val instanceof rel.hasOne) {
+              this._setOne(rel, val, options);
+            } else {
+              this.get(key).set(val, options);
+            }
           } else {
             var models = val instanceof rel.hasMany ? val.models : val;
             this.get(key).update(models, options);
@@ -72,6 +76,21 @@
         }
       }
       return set.call(this, attrs, options);
+    },
+
+    _setOne: function (rel, instance, options) {
+      if (rel.listener) this.stopListening(null, null, rel.listener);
+      rel.instance = instance;
+      var idAttr = instance.idAttribute;
+      if (instance.id) {
+        this.set(rel.fk, instance.id, options);
+      } else {
+        instance.set(idAttr, this.get(rel.fk), options);
+      }
+      rel.listener = function (__, val, options) {
+        this.set(rel.fk, val, options);
+      };
+      this.listenTo(instance, 'change:' + idAttr, rel.listener);
     }
   });
 

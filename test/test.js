@@ -6,7 +6,7 @@ var describe = global.describe;
 var it = global.it;
 
 describe('People', function () {
-  var mom = new Person({id: 1, idolId: 6});
+  var mom = new Person({id: 1});
   var dad = new Person({id: 2});
   var childA = new Person({id: 3});
   var childB = new Person({id: 4});
@@ -19,7 +19,7 @@ describe('People', function () {
   childA.get('friends').add(childB);
   childB.set('friends', childC);
 
-  childA.set('idol', rockstar);
+  mom.set('idol', rockstar);
   rockstar.set('fans', childA);
 
   it('should set children', function () {
@@ -35,11 +35,22 @@ describe('People', function () {
   });
 
   it('should set idol', function () {
-    mom.get('idol').id.should.equal(6);
+    mom.get('idol').should.equal(rockstar);
     childA.get('idol').id.should.equal(rockstar.id);
   });
 
   it('should set fans', function () {
     rockstar.get('fans').include(childA).should.be.ok;
+  });
+
+  it('should update ids', function () {
+    rockstar.set('id', 7);
+    childA.get('idolId').should.equal(7);
+    mom.get('idolId').should.equal(7);
+  });
+
+  it('should ditch old instances', function () {
+    mom.set('idolId', 6);
+    mom.get('idol').id.should.equal(6);
   });
 });
