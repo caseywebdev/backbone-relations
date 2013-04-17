@@ -67,7 +67,7 @@
       if (key == null) return this;
       var attrs;
       if (typeof key === 'object') {
-        attrs = key;
+        attrs = _.clone(key);
         options = val;
       } else {
         (attrs = {})[key] = val;

@@ -22,35 +22,41 @@ describe('People', function () {
   mom.set('idol', rockstar);
   rockstar.set('fans', childA);
 
-  it('should set children', function () {
+  it('sets children', function () {
     mom.get('children').include(childA).should.be.ok;
     mom.get('children').include(childB).should.be.ok;
     dad.get('children').include(childB).should.be.ok;
     dad.get('children').include(childC).should.be.ok;
   });
 
-  it('should set friends', function () {
+  it('sets friends', function () {
     childA.get('friends').include(childB).should.be.ok;
     childB.get('friends').include(childC).should.be.ok;
   });
 
-  it('should set idol', function () {
+  it('sets idol', function () {
     mom.get('idol').should.equal(rockstar);
     childA.get('idol').id.should.equal(rockstar.id);
   });
 
-  it('should set fans', function () {
+  it('sets fans', function () {
     rockstar.get('fans').include(childA).should.be.ok;
   });
 
-  it('should update ids', function () {
+  it('updates ids', function () {
     rockstar.set('id', 7);
     childA.get('idolId').should.equal(7);
     mom.get('idolId').should.equal(7);
   });
 
-  it('should ditch old instances', function () {
+  it('ditchs old instances', function () {
     mom.set('idolId', 6);
     mom.get('idol').id.should.equal(6);
+  });
+
+  it('does not mutate objects passed to set', function () {
+    var obj = {idol: rockstar};
+    mom.set(obj);
+    obj.should.have.property('idol');
   });
 });
