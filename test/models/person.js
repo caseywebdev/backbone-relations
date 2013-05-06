@@ -1,34 +1,35 @@
 var Backbone = require('backbone');
-var ChildParent = require('./child-parent');
-var Friendship = require('./friendship');
 
 var Person = module.exports = Backbone.Model.extend({
   relations: function () {
+    var ChildParent = require('./child-parent');
+    var Friendship = require('./friendship');
     return {
       childJoins: {
         hasMany: ChildParent.Collection,
-        fk: 'childId'
+        fk: 'parentId'
       },
       children: {
         hasMany: Person.Collection,
-        via: 'childJoins',
+        via: 'childJoins#child',
         fk: 'parentId'
       },
       parentJoins: {
         hasMany: ChildParent.Collection,
-        fk: 'parentId'
+        fk: 'childId'
       },
       parents: {
         hasMany: Person.Collection,
-        via: 'parentJoins',
+        via: 'parentJoins#parent',
         fk: 'childId'
       },
       friendships: {
         hasMany: Friendship.Collection,
-        fk: 'frienderId'
+        fk: 'friendeeId'
       },
       friends: {
         hasMany: Person.Collection,
+        via: 'friendships#friender',
         fk: 'friendeeId'
       },
       idol: {

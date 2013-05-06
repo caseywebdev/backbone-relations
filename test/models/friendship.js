@@ -1,8 +1,8 @@
 var Backbone = require('backbone');
-var Person = require('./person');
 
 var Friendship = module.exports = Backbone.Model.extend({
   relations: function () {
+    var Person = require('./person');
     return {
       friender: {
         hasOne: Person,

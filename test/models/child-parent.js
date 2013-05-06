@@ -1,8 +1,8 @@
 var Backbone = require('backbone');
-var Person = require('./person');
 
 var ChildParent = module.exports = Backbone.Model.extend({
   relations: function () {
+    var Person = require('./person');
     return {
       child: {
         hasOne: Person,

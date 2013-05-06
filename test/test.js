@@ -13,11 +13,11 @@ describe('People', function () {
   var childC = new Person({id: 5});
   var rockstar = new Person({id: 6, name: 'Elvis'});
 
-  mom.get('children').add([childA, childB]);
-  dad.set('children', [childB, childC]);
+  mom.set({childJoins: [{child: childA}, {child: childB}]});
+  dad.set('childJoins', [{child: childB}, {child: childC}]);
 
-  childA.get('friends').add(childB);
-  childB.set('friends', childC);
+  childA.get('friendships').add([{friender: childB}]);
+  childB.set('friendships', [{friender: childC}]);
 
   mom.set('idol', rockstar);
   rockstar.set('fans', childA);
