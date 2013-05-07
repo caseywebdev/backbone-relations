@@ -16,6 +16,14 @@
     _.extend(this, options);
     this.key = key;
     this.owner = owner;
+    var proto = (this.hasOne || this.hasMany.prototype.model).prototype;
+    if (!proto.relations) return;
+    var hasOne = !this.hasOne;
+    var fk = this.fk;
+    this.reverse = _.reduce(proto.relations(), function (reverse, rel, key) {
+      if (!rel.via && hasOne !== !rel.hasOne && fk === rel.fk) return key;
+      return reverse;
+    }, null);
   };
 
   _.extend(Relation.prototype, Backbone.Events);
@@ -23,8 +31,9 @@
   var HasOneRelation = _.inherit(Relation, {
     get: function () {
       var instance = this.instance;
-      if (instance && instance.id === this.owner.get(this.fk)) return instance;
-      this.set(instance = new this.hasOne());
+      var fk = this.owner.get(this.fk);
+      if (instance && instance.id === fk) return instance;
+      this.set(instance = new this.hasOne({id: fk}));
       return instance;
     },
 
@@ -34,15 +43,13 @@
         this.instance = val;
         var owner = this.owner;
         var fk = this.fk;
+        var reverse = this.reverse;
         var idAttr = val.idAttribute;
-        if (val.id) {
-          owner.set(fk, val.id, options);
-        } else {
-          val.set(idAttr, owner.get(fk), options);
-        }
+        owner.set(fk, val.id, options);
         this.listenTo(val, 'change:' + idAttr, function (__, val, options) {
           owner.set(fk, val, options);
         });
+        if (reverse) val.get(reverse).add(owner);
       } else {
         this.get(this.key).set(val, options);
       }
@@ -64,21 +71,16 @@
       instance = this.instance = new this.hasMany();
       var urlRoot = instance.urlRoot = this.urlRoot;
       var owner = instance.owner = this.owner;
-      var fk = instance.fk = this.fk;
+      instance.fk = this.fk;
       var key = this.key;
+      var reverse = this.reverse;
       instance.url = function () {
         return _.result(owner, 'url') + (urlRoot || '/' + key);
       };
       if (this.via) {
         instance.via = owner.get(this.via.split('#')[0]);
-      } else {
-        instance.each(function (model) { model.set(fk, owner.id); });
-        owner.listenTo(instance, 'add', function (model) {
-          model.set(fk, owner.id);
-        });
-        owner.on('change:' + owner.idAttribute, function (__, val) {
-          instance.each(function (model) { model.set(fk, val); });
-        });
+      } else if (reverse) {
+        instance.on('add', function (model) { model.set(reverse, owner); });
       }
       return this.get();
     },
