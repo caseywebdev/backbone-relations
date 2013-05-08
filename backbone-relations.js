@@ -14,90 +14,87 @@
 
   var Relation = function (owner, key, options) {
     _.extend(this, options);
-    this.key = key;
     this.owner = owner;
-    var proto = (this.hasOne || this.hasMany.prototype.model).prototype;
-    if (!proto.relations) return;
-    var hasOne = !this.hasOne;
-    var fk = this.fk;
-    this.reverse = _.reduce(proto.relations(), function (reverse, rel, key) {
-      if (!rel.via && hasOne !== !rel.hasOne && fk === rel.fk) return key;
-      return reverse;
-    }, null);
+    this.key = key;
   };
 
-  _.extend(Relation.prototype, Backbone.Events);
-
-  var HasOneRelation = _.inherit(Relation, {
-    get: function () {
-      var instance = this.instance;
-      var fk = this.owner.get(this.fk);
-      if (instance && instance.id === fk) return instance;
-      this.set(instance = new this.hasOne({id: fk}));
-      return instance;
-    },
-
+  _.extend(Relation.prototype, {
     set: function (val, options) {
-      if (val instanceof this.hasOne) {
-        if (this.instance) this.stopListening(this.instance);
-        this.instance = val;
-        var owner = this.owner;
-        var fk = this.fk;
-        var reverse = this.reverse;
-        var idAttr = val.idAttribute;
-        owner.set(fk, val.id, options);
-        this.listenTo(val, 'change:' + idAttr, function (__, val, options) {
-          owner.set(fk, val, options);
-        });
-        if (reverse) val.get(reverse).add(owner);
-      } else {
-        this.get(this.key).set(val, options);
+      if (!options) options = {};
+      if (!options.owner) options.owner = this.owner;
+      var instance = this.instance();
+      instance.set(val, options);
+      var owner = options.owner;
+      if (owner instanceof (this.hasOne || this.hasMany.prototype.model)) {
+        var existing = instance.get(owner);
+        if (existing && existing !== owner) {
+          instance.remove(existing, options).add(owner, options);
+        }
       }
     }
   });
 
-  var HasManyRelation = _.inherit(Relation, {
-    get: function () {
-      var instance = this.instance;
-      if (instance) {
-        if (!this.via) return instance;
-        var models = instance.via.pluck(this.via.split('#')[1] || this.key);
-        return instance.set(
-          models[0] instanceof this.hasMany ?
-          _.flatten(_.pluck(models, 'models')) :
-          models
-        );
-      }
-      instance = this.instance = new this.hasMany();
-      var urlRoot = instance.urlRoot = this.urlRoot;
-      var owner = instance.owner = this.owner;
-      instance.fk = this.fk;
-      var key = this.key;
-      var reverse = this.reverse;
-      instance.url = function () {
-        return _.result(owner, 'url') + (urlRoot || '/' + key);
-      };
-      if (this.via) {
-        instance.via = owner.get(this.via.split('#')[0]);
-      } else if (reverse) {
-        instance.on('add', function (model) { model.set(reverse, owner); });
-      }
-      return this.get();
+  var HasOneRelation = _.inherit(Relation, {
+    instance: function () {
+      if (this._instance) return this._instance;
+      var Model = this.hasOne;
+      var Collection = Backbone.Collection.extend({model: Model});
+      var instance = this._instance = new Collection();
+      var idAttr = Model.prototype.idAttribute;
+      instance.on('add change:' + idAttr, function (model, __, options) {
+        this.owner.set(this.fk, model.id, options);
+        if (this.reverse) model.get(this.reverse).add(this.owner, options);
+      }, this);
+      this.owner.on('change:' + this.fk, function (__, val, options) {
+        if (!instance.get(val)) instance.set(new Model({id: val}), options);
+      }, this);
+      return instance;
     },
 
-    set: function (val, options) {
-      var models = val instanceof this.hasMany ? val.models : val;
-      this.get(this.key).set(models, options);
+    get: function () { return this.instance().first(); }
+  });
+
+  var HasManyRelation = _.inherit(Relation, {
+    instance: function () {
+      if (this._instance) return this._instance;
+      var instance = this._instance = new this.hasMany();
+      var owner = instance.owner = this.owner;
+      instance.fk = this.fk;
+      instance.urlRoot = this.urlRoot || '/' + this.key;
+      instance.url = function () {
+        return _.result(owner, 'url') + this.urlRoot;
+      };
+      var reverse = this.reverse;
+      if (this.via) {
+        instance.via = owner.get(this.via.split('#')[0]);
+      } else if (this.reverse) {
+        instance.on('add', function (model, __, options) {
+          model.set(reverse, owner, options);
+        });
+      }
+      return instance;
+    },
+
+    get: function () {
+      var instance = this.instance();
+      if (!this.via) return instance;
+      var models = instance.via.pluck(this.via.split('#')[1] || this.key);
+      return instance.set(
+        models[0] instanceof this.hasMany ?
+        _.flatten(_.pluck(models, 'models')) :
+        models
+      );
     }
   });
 
   Backbone.Model = Backbone.Model.extend({
     constructor: function () {
-      if (this.relations) {
-        this.relations = _.reduce(this.relations(), function (o, options, key) {
+      var relations = _.result(this, 'relations');
+      if (relations) {
+        this.relations = _.reduce(relations, function (obj, options, key) {
           var ctor = options.hasOne ? HasOneRelation : HasManyRelation;
-          o[key] = new ctor(this, key, options);
-          return o;
+          obj[key] = new ctor(this, key, options);
+          return obj;
         }, {}, this);
       }
       return constructor.apply(this, arguments);

@@ -1,22 +1,19 @@
-var Backbone = require('backbone');
+var Model = require('./model');
 
-var ChildParent = module.exports = Backbone.Model.extend({
-  relations: function () {
-    var Person = require('./person');
-    return {
-      child: {
-        hasOne: Person,
-        fk: 'childId'
-      },
-      parent: {
-        hasOne: Person,
-        fk: 'parentId'
-      }
-    };
+var ChildParent = module.exports = Model.extend({
+  relations: {
+    child: {
+      hasOne: 'person',
+      fk: 'childId'
+    },
+    parent: {
+      hasOne: 'person',
+      fk: 'parentId'
+    }
   }
 });
 
-ChildParent.Collection = Backbone.Collection.extend({
+ChildParent.Collection = Model.Collection.extend({
   model: ChildParent,
   url: '/child-parents'
 });

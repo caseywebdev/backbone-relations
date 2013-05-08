@@ -1,22 +1,19 @@
-var Backbone = require('backbone');
+var Model = require('./model');
 
-var Friendship = module.exports = Backbone.Model.extend({
-  relations: function () {
-    var Person = require('./person');
-    return {
-      friender: {
-        hasOne: Person,
-        fk: 'frienderId'
-      },
-      friendee: {
-        hasOne: Person,
-        fk: 'friendeeId'
-      }
-    };
+var Friendship = module.exports = Model.extend({
+  relations: {
+    friender: {
+      hasOne: 'person',
+      fk: 'frienderId'
+    },
+    friendee: {
+      hasOne: 'person',
+      fk: 'friendeeId'
+    }
   }
 });
 
-Friendship.Collection = Backbone.Collection.extend({
+Friendship.Collection = Model.Collection.extend({
   model: Friendship,
   url: '/friendships'
 });

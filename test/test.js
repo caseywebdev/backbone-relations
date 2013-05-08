@@ -22,6 +22,20 @@ describe('People', function () {
   mom.set('idol', rockstar);
   rockstar.set('fans', childA);
 
+  it('remembers the owner model', function () {
+    var parent = new Person({id: 1});
+    var child = new Person({
+      id: 2,
+      parentJoins: [{
+        parent: {id: 1}
+      }]
+    });
+    parent.set('childJoins', child.get('parentJoins').models);
+    parent.get('children').should.have.length(1);
+    parent.get('children').first().should.equal(child);
+    parent.get('children').first().get('parents').first().should.equal(parent);
+  });
+
   it('sets children', function () {
     mom.get('children').include(childA).should.be.ok;
     mom.get('children').include(childB).should.be.ok;
