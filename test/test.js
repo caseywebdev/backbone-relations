@@ -23,14 +23,14 @@ describe('People', function () {
 
 
   it('sets children', function () {
-    mom.via('children').include(childA).should.be.ok;
-    mom.via('children').include(childB).should.be.ok;
-    dad.via('children').include(childB).should.be.ok;
-    dad.via('children').include(childC).should.be.ok;
+    mom.resolve('children').include(childA).should.be.ok;
+    mom.resolve('children').include(childB).should.be.ok;
+    dad.resolve('children').include(childB).should.be.ok;
+    dad.resolve('children').include(childC).should.be.ok;
   });
 
   it('sets friends', function () {
-    childA.via('friends').models.should.include(childB, childC);
+    childA.resolve('friends').models.should.include(childB, childC);
   });
 
   it('always has a default hasOne', function () {
@@ -64,12 +64,14 @@ describe('People', function () {
   });
 
   it('does not hold on to old reverse relations', function () {
-    mom.via('children').models.should.include(childA).and.not.include(childC);
-    childA.via('parents').models.should.include(mom);
-    childC.via('parents').models.should.not.include(mom);
+    mom.resolve('children').models.should.include(childA)
+      .and.not.include(childC);
+    childA.resolve('parents').models.should.include(mom);
+    childC.resolve('parents').models.should.not.include(mom);
     mom.get('childJoins').findWhere({childId: childA.id}).set('child', childC);
-    mom.via('children').models.should.include(childC).and.not.include(childA);
-    childA.via('parents').models.should.not.include(mom);
-    childC.via('parents').models.should.include(mom);
+    mom.resolve('children').models.should.include(childC)
+      .and.not.include(childA);
+    childA.resolve('parents').models.should.not.include(mom);
+    childC.resolve('parents').models.should.include(mom);
   });
 });

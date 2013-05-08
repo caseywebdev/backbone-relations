@@ -23,10 +23,10 @@
 
     set: function (val, options) { this.instance().set(val, options); },
 
-    resolveVia: function () {
+    resolve: function () {
       if (!this.via) return this.get();
       var split = this.via.split('#');
-      var models = this.owner.via(split[0]).pluck(split[1] || this.key);
+      var models = this.owner.resolve(split[0]).pluck(split[1] || this.key);
       return new this.hasMany(
         models[0] instanceof this.hasMany ?
         _.flatten(_.pluck(models, 'models')) :
@@ -131,10 +131,10 @@
       return set.call(this, attrs, options);
     },
 
-    via: function (key) {
+    resolve: function (key) {
       var relations = this.relations;
       if (!relations || !relations[key]) return;
-      return relations[key].resolveVia(key);
+      return relations[key].resolve(key);
     }
   });
 
