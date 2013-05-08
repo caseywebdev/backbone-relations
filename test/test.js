@@ -21,29 +21,16 @@ describe('People', function () {
   mom.set('idol', rockstar);
   rockstar.set('fans', childA);
 
-  it('remembers the owner model', function () {
-    var parent = new Person({id: 1});
-    var child = new Person({
-      id: 2,
-      parentJoins: [{
-        parent: {id: 1}
-      }]
-    });
-    parent.set('childJoins', child.get('parentJoins').models);
-    parent.get('children').should.have.length(1);
-    parent.get('children').first().should.equal(child);
-    parent.get('children').first().get('parents').first().should.equal(parent);
-  });
 
   it('sets children', function () {
-    mom.get('children').include(childA).should.be.ok;
-    mom.get('children').include(childB).should.be.ok;
-    dad.get('children').include(childB).should.be.ok;
-    dad.get('children').include(childC).should.be.ok;
+    mom.via('children').include(childA).should.be.ok;
+    mom.via('children').include(childB).should.be.ok;
+    dad.via('children').include(childB).should.be.ok;
+    dad.via('children').include(childC).should.be.ok;
   });
 
   it('sets friends', function () {
-    childA.get('friends').models.should.include(childB, childC);
+    childA.via('friends').models.should.include(childB, childC);
   });
 
   it('always has a default hasOne', function () {
@@ -77,14 +64,12 @@ describe('People', function () {
   });
 
   it('does not hold on to old reverse relations', function () {
-    mom.get('children').models.should.include(childA);
-    childA.get('parents').models.should.include(mom);
-    mom.get('children').models.should.not.include(childC);
-    childC.get('parents').models.should.not.include(mom);
+    mom.via('children').models.should.include(childA).and.not.include(childC);
+    childA.via('parents').models.should.include(mom);
+    childC.via('parents').models.should.not.include(mom);
     mom.get('childJoins').findWhere({childId: childA.id}).set('child', childC);
-    mom.get('children').models.should.not.include(childA);
-    childA.get('parents').models.should.not.include(mom);
-    mom.get('children').models.should.include(childC);
-    childC.get('parents').models.should.include(mom);
+    mom.via('children').models.should.include(childC).and.not.include(childA);
+    childA.via('parents').models.should.not.include(mom);
+    childC.via('parents').models.should.include(mom);
   });
 });

@@ -19,18 +19,19 @@
   };
 
   _.extend(Relation.prototype, {
-    set: function (val, options) {
-      if (!options) options = {};
-      if (!options.owner) options.owner = this.owner;
-      var instance = this.instance();
-      instance.set(val, options);
-      var owner = options.owner;
-      if (owner instanceof (this.hasOne || this.hasMany.prototype.model)) {
-        var existing = instance.get(owner);
-        if (existing && existing !== owner) {
-          instance.remove(existing, options).add(owner, options);
-        }
-      }
+    get: function () { return this.instance(); },
+
+    set: function (val, options) { this.instance().set(val, options); },
+
+    resolveVia: function () {
+      if (!this.via) return this.get();
+      var split = this.via.split('#');
+      var models = this.owner.via(split[0]).pluck(split[1] || this.key);
+      return new this.hasMany(
+        models[0] instanceof this.hasMany ?
+        _.flatten(_.pluck(models, 'models')) :
+        models
+      );
     }
   });
 
@@ -48,7 +49,9 @@
         owner.set(fk, model.id, options);
       });
       owner.on('change:' + fk, function (__, val, options) {
-        if (!instance.get(val)) instance.set(new Model({id: val}), options);
+        if (instance.first().id !== val) {
+          instance.set(new Model({id: val}), options);
+        }
       });
       if (reverse) {
         instance.on({
@@ -79,24 +82,12 @@
       var reverse = this.reverse;
       if (this.via) {
         instance.via = owner.get(this.via.split('#')[0]);
-      } else if (this.reverse) {
+      } else if (reverse) {
         instance.on('add', function (model, __, options) {
           model.set(reverse, owner, options);
         });
       }
       return instance;
-    },
-
-    get: function () {
-      var instance = this.instance();
-      if (!this.via) return instance;
-      var split = this.via.split('#');
-      var models = this.owner.get(split[0]).pluck(split[1] || this.key);
-      return instance.set(
-        models[0] instanceof this.hasMany ?
-        _.flatten(_.pluck(models, 'models')) :
-        models
-      );
     }
   });
 
@@ -120,7 +111,6 @@
     },
 
     set: function (key, val, options) {
-      if (!this.relations) return set.apply(this, arguments);
       if (key == null) return this;
       var attrs;
       if (typeof key === 'object') {
@@ -129,6 +119,7 @@
       } else {
         (attrs = {})[key] = val;
       }
+      if (!this.relations) return set.call(this, key, val, options);
       for (key in attrs) {
         var rel = this.relations[key];
         if (rel) {
@@ -138,6 +129,12 @@
         }
       }
       return set.call(this, attrs, options);
+    },
+
+    via: function (key) {
+      var relations = this.relations;
+      if (!relations || !relations[key]) return;
+      return relations[key].resolveVia(key);
     }
   });
 
