@@ -75,4 +75,16 @@ describe('People', function () {
     mom.set(obj);
     obj.should.have.property('idol');
   });
+
+  it('does not hold on to old reverse relations', function () {
+    mom.get('children').models.should.include(childA);
+    childA.get('parents').models.should.include(mom);
+    mom.get('children').models.should.not.include(childC);
+    childC.get('parents').models.should.not.include(mom);
+    mom.get('childJoins').findWhere({childId: childA.id}).set('child', childC);
+    mom.get('children').models.should.not.include(childA);
+    childA.get('parents').models.should.not.include(mom);
+    mom.get('children').models.should.include(childC);
+    childC.get('parents').models.should.include(mom);
+  });
 });

@@ -46,11 +46,20 @@
       var idAttr = Model.prototype.idAttribute;
       instance.on('add change:' + idAttr, function (model, __, options) {
         owner.set(fk, model.id, options);
-        if (reverse) model.get(reverse).add(owner, options);
       });
       owner.on('change:' + fk, function (__, val, options) {
         if (!instance.get(val)) instance.set(new Model({id: val}), options);
       });
+      if (reverse) {
+        instance.on({
+          add: function (model, __, options) {
+            model.get(reverse).add(owner, options);
+          },
+          remove: function (model, __, options) {
+            model.get(reverse).remove(owner, options);
+          }
+        });
+      }
       return instance;
     },
 
@@ -81,7 +90,8 @@
     get: function () {
       var instance = this.instance();
       if (!this.via) return instance;
-      var models = instance.via.pluck(this.via.split('#')[1] || this.key);
+      var split = this.via.split('#');
+      var models = this.owner.get(split[0]).pluck(split[1] || this.key);
       return instance.set(
         models[0] instanceof this.hasMany ?
         _.flatten(_.pluck(models, 'models')) :
