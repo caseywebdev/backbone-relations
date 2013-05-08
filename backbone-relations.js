@@ -39,15 +39,18 @@
       if (this._instance) return this._instance;
       var Model = this.hasOne;
       var Collection = Backbone.Collection.extend({model: Model});
-      var instance = this._instance = new Collection();
+      var owner = this.owner;
+      var fk = this.fk;
+      var reverse = this.reverse;
+      var instance = this._instance = new Collection({id: owner.get(fk)});
       var idAttr = Model.prototype.idAttribute;
       instance.on('add change:' + idAttr, function (model, __, options) {
-        this.owner.set(this.fk, model.id, options);
-        if (this.reverse) model.get(this.reverse).add(this.owner, options);
-      }, this);
-      this.owner.on('change:' + this.fk, function (__, val, options) {
+        owner.set(fk, model.id, options);
+        if (reverse) model.get(reverse).add(owner, options);
+      });
+      owner.on('change:' + fk, function (__, val, options) {
         if (!instance.get(val)) instance.set(new Model({id: val}), options);
-      }, this);
+      });
       return instance;
     },
 

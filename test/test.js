@@ -16,8 +16,7 @@ describe('People', function () {
   mom.set({childJoins: [{child: childA}, {child: childB}]});
   dad.set('childJoins', [{child: childB}, {child: childC}]);
 
-  childA.get('friendships').add([{friender: childB}]);
-  childB.set('friendships', [{friender: childC}]);
+  childA.set('friendships', [{friender: childB}, {friender: childC}]);
 
   mom.set('idol', rockstar);
   rockstar.set('fans', childA);
@@ -44,8 +43,11 @@ describe('People', function () {
   });
 
   it('sets friends', function () {
-    childA.get('friends').include(childB).should.be.ok;
-    childB.get('friends').include(childC).should.be.ok;
+    childA.get('friends').models.should.include(childB, childC);
+  });
+
+  it('always has a default hasOne', function () {
+    (new Person()).get('idol').should.be.ok;
   });
 
   it('sets idol', function () {
