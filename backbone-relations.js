@@ -16,6 +16,11 @@
     _.extend(this, options);
     this.owner = owner;
     this.key = key;
+    if (this.via) {
+      var split = this.via.split('#');
+      this.via = split[0];
+      this.viaKey = split[1] || key;
+    }
   };
 
   _.extend(Relation.prototype, {
@@ -25,8 +30,7 @@
 
     resolve: function () {
       if (!this.via) return this.get();
-      var split = this.via.split('#');
-      var models = this.owner.resolve(split[0]).pluck(split[1] || this.key);
+      var models = this.owner.resolve(this.via).pluck(this.viaKey);
       return new this.hasMany(
         models[0] instanceof this.hasMany ?
         _.flatten(_.pluck(models, 'models')) :
@@ -81,7 +85,7 @@
       };
       var reverse = this.reverse;
       if (this.via) {
-        instance.via = owner.get(this.via.split('#')[0]);
+        instance.via = owner.get(this.via);
       } else if (reverse) {
         instance.on('add', function (model, __, options) {
           model.set(reverse, owner, options);
