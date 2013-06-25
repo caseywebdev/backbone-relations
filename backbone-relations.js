@@ -26,7 +26,10 @@
   _.extend(Relation.prototype, {
     get: function () { return this.instance(); },
 
-    set: function (val, options) { this.instance().set(val, options); },
+    set: function (val, options) {
+      options = _.extend({}, options, {add: true, merge: true, remove: true});
+      this.instance().set(val, options);
+    },
 
     resolve: function () {
       if (!this.via) return this.get();
