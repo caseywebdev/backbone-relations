@@ -33,11 +33,14 @@
 
     resolve: function () {
       if (!this.via) return this.get();
-      var models = this.owner.resolve(this.via).pluck(this.viaKey);
+      var via = this.owner.relations[this.via];
+      var method = via.hasOne ? 'get' : 'pluck';
+      var resolved = this.owner.resolve(this.via)[method](this.viaKey);
+      if (this.hasOne) return resolved;
       return new this.hasMany(
-        models[0] instanceof this.hasMany ?
-        _.flatten(_.pluck(models, 'models')) :
-        models
+        resolved[0] instanceof this.hasMany ?
+        _.flatten(_.pluck(resolved, 'models')) :
+        resolved
       );
     }
   });
