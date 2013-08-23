@@ -74,4 +74,11 @@ describe('People', function () {
     childA.resolve('parents').models.should.not.include(mom);
     childC.resolve('parents').models.should.include(mom);
   });
+
+  it('does not wipe out a model with null is passed', function () {
+    var person = new Person();
+    person.get('idol').should.not.be.falsey;
+    person.set('idol', null);
+    person.get('idol').should.not.be.falsey;
+  });
 });
