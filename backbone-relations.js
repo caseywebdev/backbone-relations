@@ -28,7 +28,7 @@
 
     set: function (val, options) {
       options = _.extend({}, options, {add: true, merge: true, remove: true});
-      this.instance().set(val || {}, options);
+      this.instance().set(val || (this.hasOne ? {} : []), options);
     },
 
     resolve: function () {

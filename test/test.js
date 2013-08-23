@@ -81,4 +81,11 @@ describe('People', function () {
     person.set('idol', null);
     person.get('idol').should.not.be.falsey;
   });
+
+  it('does not set a 1 element collection when null is passed', function () {
+    var person = new Person();
+    person.get('children').should.have.length(0);
+    person.set('children', null);
+    person.get('children').should.have.length(0);
+  });
 });
