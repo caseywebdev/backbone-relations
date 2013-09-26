@@ -4,8 +4,8 @@
   var node = typeof window === 'undefined';
 
   var _ = node ? require('underscore') : window._;
-  if (node) require('underscore-inherit');
   var Backbone = node ? require('backbone') : window.Backbone;
+  var herit = node ? require('herit') : window.herit;
 
   var proto = Backbone.Model.prototype;
   var constructor = proto.constructor;
@@ -45,7 +45,7 @@
     }
   });
 
-  var HasOneRelation = _.inherit(Relation, {
+  var HasOneRelation = herit(Relation, {
     instance: function () {
       if (this._instance) return this._instance;
       var Model = this.hasOne;
@@ -79,7 +79,7 @@
     get: function () { return this.instance().first(); }
   });
 
-  var HasManyRelation = _.inherit(Relation, {
+  var HasManyRelation = herit(Relation, {
     instance: function () {
       if (this._instance) return this._instance;
       var instance = this._instance = new this.hasMany();
