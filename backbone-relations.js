@@ -1,14 +1,16 @@
-(function () {
+(function (root, factory) {
+  if (typeof define !== 'undefined' && define.amd) {
+    define('backbone-relations', ['underscore', 'backbone', 'herit'], factory);
+  } else if (typeof exports !== 'undefined') {
+    module.exports =
+      factory(require('underscore'), require('backbone'), require('herit'));
+  } else {
+    root.BackboneRelations = factory(root._, root.Backbone, root.herit);
+  }
+})(this, function (_, Backbone, herit) {
   'use strict';
 
-  var node = typeof window === 'undefined';
-
-  var _ = node ? require('underscore') : window._;
-  var Backbone = node ? require('backbone') : window.Backbone;
-  var herit = node ? require('herit') : window.herit;
-
   var proto = Backbone.Model.prototype;
-  var constructor = proto.constructor;
   var get = proto.get;
   var set = proto.set;
 
@@ -101,7 +103,7 @@
     }
   });
 
-  Backbone.Model = Backbone.Model.extend({
+  var Model = Backbone.Model.extend({
     constructor: function () {
       var relations = _.result(this, 'relations');
       if (relations) {
@@ -111,7 +113,7 @@
           return obj;
         }, {}, this);
       }
-      return constructor.apply(this, arguments);
+      return Backbone.Model.apply(this, arguments);
     },
 
     get: function (key) {
@@ -148,5 +150,5 @@
     }
   });
 
-  _.extend(Backbone.Collection.prototype, {model: Backbone.Model});
-})();
+  return {Model: Model, Collection: Backbone.Collection.extend({model: Model})};
+});

@@ -1,4 +1,3 @@
-require('..');
 require('chai').should();
 var Person = require('./models/person');
 
