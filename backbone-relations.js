@@ -1,5 +1,5 @@
 (function (root, factory) {
-  if (typeof define !== 'undefined' && define.amd) {
+  if (typeof define === 'function' && define.amd) {
     define('backbone-relations', ['underscore', 'backbone', 'herit'], factory);
   } else if (typeof exports !== 'undefined') {
     module.exports =
