@@ -1,6 +1,6 @@
 (function (root, factory) {
-  if (typeof root.define === 'function' && root.define.amd) {
-    root.define(['underscore', 'backbone', 'herit'], factory);
+  if (typeof define === 'function' && define.amd) {
+    define(['underscore', 'backbone', 'herit'], factory);
   } else if (typeof exports !== 'undefined') {
     module.exports =
       factory(require('underscore'), require('backbone'), require('herit'));
