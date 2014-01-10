@@ -27,7 +27,8 @@ var Person = module.exports = Model.extend({
     friends: {
       hasMany: 'person',
       via: 'friendships#friender',
-      fk: 'friendeeId'
+      fk: 'friendeeId',
+      url: 'this-is-a-test-url'
     },
     idol: {
       hasOne: 'person',

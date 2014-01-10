@@ -88,7 +88,7 @@
       var owner = instance.owner = this.owner;
       instance.fk = this.fk;
       instance.urlRoot = this.urlRoot || '/' + this.key;
-      instance.url = function () {
+      instance.url = this.url || function () {
         return _.result(owner, 'url') + this.urlRoot;
       };
       var reverse = this.reverse;

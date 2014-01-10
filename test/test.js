@@ -87,4 +87,8 @@ describe('People', function () {
     person.set('children', null);
     person.get('children').should.have.length(0);
   });
+
+  it('allows url to be passed as an option', function () {
+    (new Person()).get('friends').url.should.equal('this-is-a-test-url');
+  });
 });
