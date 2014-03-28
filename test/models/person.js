@@ -37,6 +37,10 @@ var Person = module.exports = Model.extend({
     fans: {
       hasMany: 'person',
       fk: 'idolId'
+    },
+    manager: {
+      hasOne: 'person',
+      fk: 'managerId'
     }
   }
 });

@@ -91,4 +91,17 @@ describe('People', function () {
   it('allows url to be passed as an option', function () {
     (new Person()).get('friends').url.should.equal('this-is-a-test-url');
   });
+
+  it('follows deeply nested relation setters', function () {
+    (new Person({
+      friends: [{
+        idol: {
+          manager: {
+            name: 'Jerry'
+          }
+        }
+      }]
+    })).get('friends').first().get('idol').get('manager').get('name')
+      .should.equal('Jerry');
+  });
 });
