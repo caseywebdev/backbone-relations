@@ -55,15 +55,17 @@
       var owner = this.owner;
       var fk = this.fk;
       var reverse = this.reverse;
-      var instance = this._instance = new Collection({id: owner.get(fk)});
       var idAttr = Model.prototype.idAttribute;
+      var attrs = {};
+      attrs[idAttr] = owner.get(fk);
+      var instance = this._instance = new Collection(attrs);
       instance.on('add change:' + idAttr, function (model, __, options) {
         owner.set(fk, model.id, options);
       });
       owner.on('change:' + fk, function (__, val, options) {
-        if (instance.first().id !== val) {
-          instance.set(new Model({id: val}), options);
-        }
+        if (instance.first().id === val) return;
+        attrs[idAttr] =  val;
+        instance.set(new Model(attrs), options);
       });
       if (reverse) {
         instance.on({
