@@ -108,19 +108,30 @@ describe('People', function () {
   it('proxies change events', function () {
     var a = new Person();
     var b = new Person();
+    var c = new Person();
     a.set('idol', b);
     b.set('idol', a);
+    b.set('manager', c);
     var calls = 0;
-    a.on('change:idol', function (model) {
-      model.should.equal(b);
+    b.once('change:manager', function (model) {
+      model.should.equal(c);
       ++calls;
     });
-    a.on('change:idol:name', function (model, val) {
-      model.should.equal(b);
+    a.once('change:idol:manager', function (model) {
+      model.should.equal(c);
+      ++calls;
+    });
+    b.once('change:manager:name', function (model, val) {
+      model.should.equal(c);
       val.should.equal('Billy');
       ++calls;
     });
-    b.set('name', 'Billy');
-    calls.should.equal(2);
+    a.once('change:idol:manager:name', function (model, val) {
+      model.should.equal(c);
+      val.should.equal('Billy');
+      ++calls;
+    });
+    c.set('name', 'Billy');
+    calls.should.equal(4);
   });
 });
