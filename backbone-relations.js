@@ -14,6 +14,10 @@
   var get = proto.get;
   var set = proto.set;
 
+  var OwnerList = herit(Array, {
+    constructor: function () { this.push.apply(this, arguments); }
+  });
+
   var Relation = herit({
     constructor: function (owner, key, options) {
       _.extend(this, options);
@@ -44,6 +48,20 @@
         _.flatten(_.pluck(resolved, 'models')) :
         resolved
       );
+    },
+
+    proxyEvent: function () {
+      var owners = _.find(arguments, function (argument) {
+        return argument instanceof OwnerList;
+      });
+      if (!owners) {
+        owners = new OwnerList(this.instance);
+        [].push.call(arguments, owners);
+      }
+      if (_.contains(owners, this.owner)) return;
+      owners.push(this.owner);
+      arguments[0] = this.key + ':' + arguments[0];
+      this.owner.trigger.apply(this.owner, arguments);
     }
   });
 
@@ -54,30 +72,14 @@
       var Collection = Backbone.Collection.extend({model: Model});
       var owner = this.owner;
       var fk = this.fk;
-      var key = this.key;
       var reverse = this.reverse;
       var idAttr = Model.prototype.idAttribute;
       var attrs = {};
       attrs[idAttr] = owner.get(fk);
       var instance = this._instance = new Collection(attrs);
-      instance
-        .on('add change:' + idAttr, function (model, __, options) {
-          owner.set(fk, model.id, options);
-        })
-        .on('all', function (name, model) {
-          if (name.indexOf('change') !== 0) return;
-          var options = _.last(arguments);
-          if (!options.owners) {
-            options = _.clone(options);
-            options.owners = {};
-            options.owners[model.cid] = true;
-          }
-          if (options.owners[owner.cid]) return;
-          options.owners[owner.cid] = true;
-          name = name.replace(/^change/, 'change:' + key);
-          var args = [name].concat([].slice.call(arguments, 1, -1), options);
-          owner.trigger.apply(owner, args);
-        });
+      instance.on('add change:' + idAttr, function (model, __, options) {
+        owner.set(fk, model.id, options);
+      });
       owner.on('change:' + fk, function (__, val, options) {
         if (instance.first().id === val) return;
         attrs[idAttr] =  val;
@@ -93,6 +95,7 @@
           }
         });
       }
+      instance.on('all', this.proxyEvent, this);
       return instance;
     },
 
@@ -117,6 +120,7 @@
           model.set(reverse, owner, options);
         });
       }
+      instance.on('all', this.proxyEvent, this);
       return instance;
     }
   });

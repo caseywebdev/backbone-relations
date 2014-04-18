@@ -105,33 +105,42 @@ describe('People', function () {
       .should.equal('Jerry');
   });
 
-  it('proxies change events', function () {
+  it('proxies relation events', function () {
     var a = new Person();
     var b = new Person();
     var c = new Person();
     a.set('idol', b);
     b.set('idol', a);
-    b.set('manager', c);
+    b.set('parents', [c]);
     var calls = 0;
-    b.once('change:manager', function (model) {
-      model.should.equal(c);
-      ++calls;
-    });
-    a.once('change:idol:manager', function (model) {
-      model.should.equal(c);
-      ++calls;
-    });
-    b.once('change:manager:name', function (model, val) {
+    b.on('parents:change:name', function (model, val) {
       model.should.equal(c);
       val.should.equal('Billy');
-      ++calls;
+      (++calls).should.equal(1);
     });
-    a.once('change:idol:manager:name', function (model, val) {
+    a.on('idol:parents:change:name', function (model, val) {
       model.should.equal(c);
       val.should.equal('Billy');
-      ++calls;
+      (++calls).should.equal(2);
+    });
+    b.on('parents:change', function (model) {
+      model.should.equal(c);
+      (++calls).should.equal(3);
+    });
+    a.on('idol:parents:change', function (model) {
+      model.should.equal(c);
+      (++calls).should.equal(4);
     });
     c.set('name', 'Billy');
-    calls.should.equal(4);
+    b.on('parents:remove', function (model) {
+      model.should.equal(c);
+      (++calls).should.equal(5);
+    });
+    a.on('idol:parents:remove', function (model) {
+      model.should.equal(c);
+      (++calls).should.equal(6);
+    });
+    b.get('parents').remove(c);
+    calls.should.equal(6);
   });
 });
