@@ -14,18 +14,18 @@
   var get = proto.get;
   var set = proto.set;
 
-  var Relation = function (owner, key, options) {
-    _.extend(this, options);
-    this.owner = owner;
-    this.key = key;
-    if (this.via) {
-      var split = this.via.split('#');
-      this.via = split[0];
-      this.viaKey = split[1] || key;
-    }
-  };
+  var Relation = herit({
+    constructor: function (owner, key, options) {
+      _.extend(this, options);
+      this.owner = owner;
+      this.key = key;
+      if (this.via) {
+        var split = this.via.split('#');
+        this.via = split[0];
+        this.viaKey = split[1] || key;
+      }
+    },
 
-  _.extend(Relation.prototype, {
     get: function () { return this.instance(); },
 
     set: function (val, options) {
