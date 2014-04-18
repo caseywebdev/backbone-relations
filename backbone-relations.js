@@ -19,14 +19,12 @@
   });
 
   var Relation = herit({
-    constructor: function (owner, key, options) {
+    constructor: function (options) {
       _.extend(this, options);
-      this.owner = owner;
-      this.key = key;
       if (this.via) {
         var split = this.via.split('#');
         this.via = split[0];
-        this.viaKey = split[1] || key;
+        this.viaKey = split[1] || this.key;
       }
     },
 
@@ -70,21 +68,23 @@
       if (this._instance) return this._instance;
       var Model = this.hasOne;
       var Collection = Backbone.Collection.extend({model: Model});
+      var instance = this._instance = new Collection({});
       var owner = this.owner;
       var fk = this.fk;
       var reverse = this.reverse;
-      var idAttr = Model.prototype.idAttribute;
-      var attrs = {};
-      attrs[idAttr] = owner.get(fk);
-      var instance = this._instance = new Collection(attrs);
-      instance.on('add change:' + idAttr, function (model, __, options) {
-        owner.set(fk, model.id, options);
-      });
-      owner.on('change:' + fk, function (__, val, options) {
-        if (instance.first().id === val) return;
-        attrs[idAttr] =  val;
-        instance.set(new Model(attrs), options);
-      });
+      if (fk) {
+        var idAttr = Model.prototype.idAttribute;
+        this.get().set(idAttr, owner.get(fk));
+        instance.on('add change:' + idAttr, function (model, __, options) {
+          owner.set(fk, model.id, options);
+        });
+        owner.on('change:' + fk, function (__, val, options) {
+          if (this.get().id === val) return;
+          var attrs = {};
+          attrs[idAttr] =  val;
+          instance.set(attrs, options);
+        }, this);
+      }
       if (reverse) {
         instance.on({
           add: function (model, __, options) {
@@ -95,8 +95,7 @@
           }
         });
       }
-      instance.on('all', this.proxyEvent, this);
-      return instance;
+      return instance.on('all', this.proxyEvent, this);
     },
 
     get: function () { return this.instance().first(); }
@@ -120,8 +119,7 @@
           model.set(reverse, owner, options);
         });
       }
-      instance.on('all', this.proxyEvent, this);
-      return instance;
+      return instance.on('all', this.proxyEvent, this);
     }
   });
 
@@ -131,7 +129,7 @@
       if (relations) {
         this.relations = _.reduce(relations, function (obj, options, key) {
           var ctor = options.hasOne ? HasOneRelation : HasManyRelation;
-          obj[key] = new ctor(this, key, options);
+          obj[key] = new ctor(_.extend({}, options, {owner: this, key: key}));
           return obj;
         }, {}, this);
       }
