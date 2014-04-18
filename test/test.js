@@ -104,4 +104,23 @@ describe('People', function () {
     })).get('friends').first().get('idol').get('manager').get('name')
       .should.equal('Jerry');
   });
+
+  it('proxies change events', function () {
+    var a = new Person();
+    var b = new Person();
+    a.set('idol', b);
+    b.set('idol', a);
+    var calls = 0;
+    a.on('change:idol', function (model) {
+      model.should.equal(b);
+      ++calls;
+    });
+    a.on('change:idol:name', function (model, val) {
+      model.should.equal(b);
+      val.should.equal('Billy');
+      ++calls;
+    });
+    b.set('name', 'Billy');
+    calls.should.equal(2);
+  });
 });

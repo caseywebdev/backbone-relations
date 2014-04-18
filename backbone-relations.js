@@ -54,14 +54,30 @@
       var Collection = Backbone.Collection.extend({model: Model});
       var owner = this.owner;
       var fk = this.fk;
+      var key = this.key;
       var reverse = this.reverse;
       var idAttr = Model.prototype.idAttribute;
       var attrs = {};
       attrs[idAttr] = owner.get(fk);
       var instance = this._instance = new Collection(attrs);
-      instance.on('add change:' + idAttr, function (model, __, options) {
-        owner.set(fk, model.id, options);
-      });
+      instance
+        .on('add change:' + idAttr, function (model, __, options) {
+          owner.set(fk, model.id, options);
+        })
+        .on('all', function (name, model) {
+          if (name.indexOf('change') !== 0) return;
+          var options = _.last(arguments);
+          if (!options.owners) {
+            options = _.clone(options);
+            options.owners = {};
+            options.owners[model.cid] = true;
+          }
+          if (options.owners[owner.cid]) return;
+          options.owners[owner.cid] = true;
+          name = name.replace(/^change/, 'change:' + key);
+          var args = [name].concat([].slice.call(arguments, 1, -1), options);
+          owner.trigger.apply(owner, args);
+        });
       owner.on('change:' + fk, function (__, val, options) {
         if (instance.first().id === val) return;
         attrs[idAttr] =  val;
