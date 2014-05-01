@@ -5,12 +5,12 @@ var describe = global.describe;
 var it = global.it;
 
 describe('People', function () {
-  var mom = new Person({id: 1});
-  var dad = new Person({id: 2});
-  var childA = new Person({id: 3});
-  var childB = new Person({id: 4});
-  var childC = new Person({id: 5});
-  var rockstar = new Person({id: 6, name: 'Elvis'});
+  var mom = new Person.Model({id: 1});
+  var dad = new Person.Model({id: 2});
+  var childA = new Person.Model({id: 3});
+  var childB = new Person.Model({id: 4});
+  var childC = new Person.Model({id: 5});
+  var rockstar = new Person.Model({id: 6, name: 'Elvis'});
 
   mom.set({childJoins: [{child: childA}, {child: childB}]});
   dad.set('childJoins', [{child: childB}, {child: childC}]);
@@ -33,7 +33,7 @@ describe('People', function () {
   });
 
   it('always has a default hasOne', function () {
-    (new Person()).get('idol').should.be.ok;
+    (new Person.Model()).get('idol').should.be.ok;
   });
 
   it('sets idol', function () {
@@ -75,25 +75,25 @@ describe('People', function () {
   });
 
   it('does not wipe out a model with null is passed', function () {
-    var person = new Person();
+    var person = new Person.Model();
     person.get('idol').should.not.be.falsey;
     person.set('idol', null);
     person.get('idol').should.not.be.falsey;
   });
 
   it('does not set a 1 element collection when null is passed', function () {
-    var person = new Person();
+    var person = new Person.Model();
     person.get('children').should.have.length(0);
     person.set('children', null);
     person.get('children').should.have.length(0);
   });
 
   it('allows url to be passed as an option', function () {
-    (new Person()).get('friends').url.should.equal('this-is-a-test-url');
+    (new Person.Model()).get('friends').url.should.equal('this-is-a-test-url');
   });
 
   it('follows deeply nested relation setters', function () {
-    (new Person({
+    (new Person.Model({
       friends: [{
         idol: {
           manager: {
@@ -106,9 +106,9 @@ describe('People', function () {
   });
 
   it('proxies relation events', function () {
-    var a = new Person();
-    var b = new Person();
-    var c = new Person();
+    var a = new Person.Model();
+    var b = new Person.Model();
+    var c = new Person.Model();
     a.set('idol', b);
     b.set('idol', a);
     b.set('parents', [c]);

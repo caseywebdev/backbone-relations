@@ -1,51 +1,53 @@
-var Model = require('./model');
+var BackboneRelations = require('../..');
+var ChildParent = require('./child-parent');
+var Friendship = require('./friendship');
 
-var Person = module.exports = Model.extend({
+exports.Model = BackboneRelations.Model.extend({
   relations: {
     childJoins: {
-      hasMany: 'child-parent',
+      hasMany: ChildParent,
       fk: 'parentId'
     },
     children: {
-      hasMany: 'person',
+      hasMany: exports,
       via: 'childJoins#child',
       fk: 'parentId'
     },
     parentJoins: {
-      hasMany: 'child-parent',
+      hasMany: ChildParent,
       fk: 'childId'
     },
     parents: {
-      hasMany: 'person',
+      hasMany: exports,
       via: 'parentJoins#parent',
       fk: 'childId'
     },
     friendships: {
-      hasMany: 'friendship',
+      hasMany: Friendship,
       fk: 'friendeeId'
     },
     friends: {
-      hasMany: 'person',
+      hasMany: exports,
       via: 'friendships#friender',
       fk: 'friendeeId',
       url: 'this-is-a-test-url'
     },
     idol: {
-      hasOne: 'person',
+      hasOne: exports,
       fk: 'idolId'
     },
     fans: {
-      hasMany: 'person',
+      hasMany: exports,
       fk: 'idolId'
     },
     manager: {
-      hasOne: 'person',
+      hasOne: exports,
       fk: 'managerId'
     }
   }
 });
 
-Person.Collection = Model.Collection.extend({
-  model: Person,
+exports.Collection = BackboneRelations.Collection.extend({
+  model: exports.Model,
   url: '/people'
 });

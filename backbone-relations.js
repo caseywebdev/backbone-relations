@@ -125,14 +125,12 @@
 
   var Model = Backbone.Model.extend({
     constructor: function () {
-      var relations = _.result(this, 'relations');
-      if (relations) {
-        this.relations = _.reduce(relations, function (obj, options, key) {
-          var ctor = options.hasOne ? HasOneRelation : HasManyRelation;
-          obj[key] = new ctor(_.extend({}, options, {owner: this, key: key}));
-          return obj;
-        }, {}, this);
-      }
+      this.constructor.resolveRelations();
+      this.relations = _.reduce(this.relations, function (obj, options, key) {
+        var ctor = options.hasOne ? HasOneRelation : HasManyRelation;
+        obj[key] = new ctor(_.extend({}, options, {owner: this, key: key}));
+        return obj;
+      }, {}, this);
       return Backbone.Model.apply(this, arguments);
     },
 
@@ -167,6 +165,27 @@
       var relations = this.relations;
       if (!relations || !relations[key]) return;
       return relations[key].resolve(key);
+    }
+  }, {
+    resolveRelations: function () {
+      var relations = _.result(this.prototype, 'relations');
+      if (!_.size(relations)) return;
+      this.prototype.relations = relations;
+      var check = _.first(_.values(relations));
+      if (_.isFunction(check.hasOne || check.hasMany)) return;
+      _.each(relations, function (rel) {
+        if (rel.hasOne) rel.hasOne = rel.hasOne.Model;
+        if (rel.hasMany) rel.hasMany = rel.hasMany.Collection;
+        var fk = rel.fk;
+        if (rel.via || !fk) return;
+        var Model = rel.hasOne || rel.hasMany.prototype.model;
+        var complement = Model.prototype.relations;
+        var hasOne = !rel.hasOne;
+        rel.reverse = _.reduce(complement, function (reverse, rel, key) {
+          if (!rel.via && hasOne !== !rel.hasOne && fk === rel.fk) return key;
+          return reverse;
+        }, null);
+      });
     }
   });
 
