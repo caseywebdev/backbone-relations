@@ -1,10 +1,16 @@
 {
   "name": "backbone-relations",
-  "version": "0.8.4",
-  "main": "./backbone-relations.js",
+  "version": "0.8.5",
+  "main": "backbone-relations.js",
   "dependencies": {
     "backbone": "x",
     "herit": "x",
     "underscore": "x"
-  }
+  },
+  "ignore": [
+    "*.sublime*",
+    ".*",
+    "package.json",
+    "test"
+  ]
 }

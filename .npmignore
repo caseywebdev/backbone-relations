@@ -1,2 +1,4 @@
-/node_modules
+/*.sublime*
+/.travis.yml
+/bower.json
 /test
