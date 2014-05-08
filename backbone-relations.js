@@ -14,10 +14,6 @@
   var get = proto.get;
   var set = proto.set;
 
-  var OwnerList = herit(Array, {
-    constructor: function () { this.push.apply(this, arguments); }
-  });
-
   var Relation = herit({
     constructor: function (options) {
       _.extend(this, options);
@@ -46,20 +42,6 @@
         _.flatten(_.pluck(resolved, 'models')) :
         resolved
       );
-    },
-
-    proxyEvent: function () {
-      var owners = _.find(arguments, function (argument) {
-        return argument instanceof OwnerList;
-      });
-      if (!owners) {
-        owners = new OwnerList(this.instance);
-        [].push.call(arguments, owners);
-      }
-      if (_.contains(owners, this.owner)) return;
-      owners.push(this.owner);
-      arguments[0] = this.key + ':' + arguments[0];
-      this.owner.trigger.apply(this.owner, arguments);
     }
   });
 
@@ -95,7 +77,7 @@
           }
         });
       }
-      return instance.on('all', this.proxyEvent, this);
+      return instance;
     },
 
     get: function () { return this.instance().first(); }
@@ -119,7 +101,7 @@
           model.set(reverse, owner, options);
         });
       }
-      return instance.on('all', this.proxyEvent, this);
+      return instance;
     }
   });
 
