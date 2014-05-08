@@ -14,7 +14,9 @@
   var get = proto.get;
   var set = proto.set;
 
-  var KeyMap = herit();
+  var OwnerList = herit(Array, {
+    constructor: function () { this.push.apply(this, arguments); }
+  });
 
   var Relation = herit({
     constructor: function (options) {
@@ -47,13 +49,15 @@
     },
 
     proxyEvent: function () {
-      var keyMap = _.find(arguments, function (argument) {
-        return argument instanceof KeyMap;
+      var owners = _.find(arguments, function (argument) {
+        return argument instanceof OwnerList;
       });
-      if (!keyMap) [].push.call(arguments, keyMap = new KeyMap());
-      if (keyMap[this.key]) return;
-      keyMap[this.key] = true;
-      if (this.reverse) keyMap[this.reverse] = true;
+      if (!owners) {
+        owners = new OwnerList(this.instance);
+        [].push.call(arguments, owners);
+      }
+      if (_.contains(owners, this.owner)) return;
+      owners.push(this.owner);
       arguments[0] = this.key + ':' + arguments[0];
       this.owner.trigger.apply(this.owner, arguments);
     }
@@ -115,7 +119,7 @@
           model.set(reverse, owner, options);
         });
       }
-      return instance.on('all', this.proxyEvent, this);
+      return instance;
     }
   });
 
