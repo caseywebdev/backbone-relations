@@ -104,4 +104,43 @@ describe('People', function () {
     })).get('friends').first().get('idol').get('manager').get('name')
       .should.equal('Jerry');
   });
+
+  it('proxies relation events', function () {
+    var a = new Person.Model();
+    var b = new Person.Model();
+    var c = new Person.Model();
+    a.set('idol', b);
+    b.set('idol', a);
+    b.set('parents', [c]);
+    var calls = 0;
+    b.on('parents:change:name', function (model, val) {
+      model.should.equal(c);
+      val.should.equal('Billy');
+      (++calls).should.equal(1);
+    });
+    a.on('idol:parents:change:name', function (model, val) {
+      model.should.equal(c);
+      val.should.equal('Billy');
+      (++calls).should.equal(2);
+    });
+    b.on('parents:change', function (model) {
+      model.should.equal(c);
+      (++calls).should.equal(3);
+    });
+    a.on('idol:parents:change', function (model) {
+      model.should.equal(c);
+      (++calls).should.equal(4);
+    });
+    c.set('name', 'Billy');
+    b.on('parents:remove', function (model) {
+      model.should.equal(c);
+      (++calls).should.equal(5);
+    });
+    a.on('idol:parents:remove', function (model) {
+      model.should.equal(c);
+      (++calls).should.equal(6);
+    });
+    b.get('parents').remove(c);
+    calls.should.equal(6);
+  });
 });
