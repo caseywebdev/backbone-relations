@@ -49,7 +49,7 @@
       );
       resolved.urlRoot = this.urlRoot || '/' + this.key;
       resolved.url = this.url || function () {
-        return _.result(owner, 'url') + this.urlRoot;
+        return _.result(owner, 'url') + _.result(this, 'urlRoot');
       };
       return resolved;
     },
@@ -115,7 +115,7 @@
       instance.fk = this.fk;
       instance.urlRoot = this.urlRoot || '/' + this.key;
       instance.url = this.url || function () {
-        return _.result(owner, 'url') + this.urlRoot;
+        return _.result(owner, 'url') + _.result(this, 'urlRoot');
       };
       var reverse = this.reverse;
       if (this.via) {

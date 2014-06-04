@@ -21,7 +21,7 @@ exports.Model = BackboneRelations.Model.extend({
       hasMany: exports,
       via: 'parentJoins#parent',
       fk: 'childId',
-      urlRoot: '/parents'
+      urlRoot: function () { return '/parents'; }
     },
     friendships: {
       hasMany: Friendship,
