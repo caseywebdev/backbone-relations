@@ -92,6 +92,11 @@ describe('People', function () {
     (new Person.Model()).get('friends').url.should.equal('this-is-a-test-url');
   });
 
+  it('sets urls for resolved collections', function () {
+    (new Person.Model({id: 1})).resolve('parents').url()
+      .should.equal('/people/1/parents');
+  });
+
   it('follows deeply nested relation setters', function () {
     (new Person.Model({
       friends: [{

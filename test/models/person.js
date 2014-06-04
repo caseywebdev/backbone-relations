@@ -20,7 +20,8 @@ exports.Model = BackboneRelations.Model.extend({
     parents: {
       hasMany: exports,
       via: 'parentJoins#parent',
-      fk: 'childId'
+      fk: 'childId',
+      urlRoot: '/parents'
     },
     friendships: {
       hasMany: Friendship,
@@ -44,7 +45,9 @@ exports.Model = BackboneRelations.Model.extend({
       hasOne: exports,
       fk: 'managerId'
     }
-  }
+  },
+
+  urlRoot: '/people'
 });
 
 exports.Collection = BackboneRelations.Collection.extend({

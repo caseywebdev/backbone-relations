@@ -37,15 +37,21 @@
 
     resolve: function () {
       if (!this.via) return this.get();
-      var via = this.owner.relations[this.via];
+      var owner = this.owner;
+      var via = owner.relations[this.via];
       var method = via.hasOne ? 'get' : 'pluck';
-      var resolved = this.owner.resolve(this.via)[method](this.viaKey);
+      var resolved = owner.resolve(this.via)[method](this.viaKey);
       if (this.hasOne) return resolved;
-      return new this.hasMany(
+      resolved = new this.hasMany(
         resolved[0] instanceof this.hasMany ?
         _.flatten(_.pluck(resolved, 'models')) :
         resolved
       );
+      resolved.urlRoot = this.urlRoot || '/' + this.key;
+      resolved.url = this.url || function () {
+        return _.result(owner, 'url') + this.urlRoot;
+      };
+      return resolved;
     },
 
     proxyEvent: function () {
